@@ -101,6 +101,11 @@ const TEN_DON_VI = "Phòng BIM — Hạ tầng giao thông";
   .prog-track{position:relative;height:8px;background:var(--ink)}
   .prog-fill{position:absolute;left:0;top:0;height:100%;background:var(--orange)}
   .prog-dash{position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 12px,rgba(255,255,255,.55) 12px 14px)}
+  .prog-scale{
+    display:flex;justify-content:space-between;
+    font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--concrete);
+    margin-top:3px;letter-spacing:.05em;
+  }
   .card-foot{border-top:1px solid var(--line);display:flex}
   .card-foot a{
     flex:1;text-align:center;text-decoration:none;padding:11px;
@@ -375,11 +380,12 @@ function veDanhSach(){
       </div>
       ${hanHTML}
       <div class="prog">
-        <div class="prog-head"><span>Km 0+000</span><span class="pct">${pct}%</span></div>
+        <div class="prog-head"><span>Tiến độ</span><span class="pct">${pct}%</span></div>
         <div class="prog-track">
           <div class="prog-fill" style="width:${pct}%"></div>
           <div class="prog-dash"></div>
         </div>
+        <div class="prog-scale"><span>0</span><span>50</span><span>100</span></div>
       </div>
       <div class="card-foot">
         <a href="${thoatHTML(d.link)}" target="_blank" rel="noopener">Mở portal dự án →</a>
