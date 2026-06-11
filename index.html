@@ -22,7 +22,7 @@
 
 const LINK_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRTmIdgavLyCkeO1yUx5CvRdkYLH7cCW8tYlJ1QaSbKSpalHUP9pIexdo1dbiC5skg5d4_4L6pCd4lr/pub?gid=0&single=true&output=csv";
 
-const TEN_DON_VI = "Phòng BIM — KC1";
+const TEN_DON_VI = "Phòng BIM — Hạ tầng giao thông";
 
 /* ★★★ HẾT PHẦN CẤU HÌNH — phía dưới không cần đụng tới ★★★
    ============================================================ */
@@ -88,8 +88,16 @@ const TEN_DON_VI = "Phòng BIM — KC1";
   }
   .b-cau{background:#E8EEF7}.b-duong{background:#EAF3EA}.b-ham{background:#F3EAF3}.b-nutgiao{background:#FBF3E0}
   .card h2{font-family:'Saira Condensed',sans-serif;font-weight:600;font-size:23px;text-transform:uppercase;padding:14px 16px 4px;line-height:1.15}
-  .card-meta{padding:0 16px 6px;font-size:13px;color:var(--concrete);display:flex;flex-wrap:wrap;gap:2px 18px}
+  .card-meta{padding:0 16px 6px;font-size:13px;color:var(--concrete);display:flex;flex-wrap:wrap;gap:4px 18px;align-items:center}
   .card-meta b{color:var(--ink);font-weight:500}
+  .tt-chip{
+    font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;
+    padding:2px 9px;border-radius:2px;text-transform:uppercase;border:1px solid;
+  }
+  .tt-chay{background:#E8EEF7;color:#1D4ED8;border-color:#1D4ED8}
+  .tt-xong{background:#E1F0E5;color:var(--green);border-color:var(--green)}
+  .tt-dung{background:#FBE3D4;color:#9A3B00;border-color:var(--orange)}
+  .tt-khac{background:var(--paper);color:var(--concrete);border-color:var(--line)}
   .deadline{padding:0 16px 10px;font-size:12.5px;font-family:'IBM Plex Mono',monospace}
   .deadline.qua-han{color:var(--red);font-weight:500}
   .deadline.sap-han{color:var(--amber);font-weight:500}
@@ -176,6 +184,7 @@ const TEN_DON_VI = "Phòng BIM — KC1";
     <input type="search" id="oTimKiem" placeholder="🔍 Tìm theo tên, mã dự án, người phụ trách..." aria-label="Tìm kiếm dự án">
     <select id="locLoai" aria-label="Lọc theo loại công trình"><option value="">Tất cả loại</option></select>
     <select id="locGiaiDoan" aria-label="Lọc theo giai đoạn"><option value="">Tất cả giai đoạn</option></select>
+    <select id="locTrangThai" aria-label="Lọc theo trạng thái"><option value="">Tất cả trạng thái</option></select>
     <select id="sapXep" aria-label="Sắp xếp">
       <option value="han">Sắp xếp: Hạn nộp gần nhất</option>
       <option value="tiendo-asc">Sắp xếp: Tiến độ thấp → cao</option>
@@ -222,6 +231,13 @@ function lopBadge(loai){
   if(k.includes('nut')) return 'b-nutgiao';
   return '';
 }
+function lopTrangThai(tt){
+  const k = boDau(tt);
+  if(k.includes('hoan thanh') || k.includes('ban giao')) return 'tt-xong';
+  if(k.includes('tam dung') || k.includes('treo') || k.includes('huy')) return 'tt-dung';
+  if(k.includes('dang')) return 'tt-chay';
+  return 'tt-khac';
+}
 /* Đọc ngày dd/mm/yyyy → Date */
 function docNgay(s){
   const m = String(s ?? '').trim().match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
@@ -240,14 +256,16 @@ function chuanHoaDong(row){
   const o = {};
   for(const k in row){ o[boDau(k)] = String(row[k] ?? '').trim(); }
   return {
-    ma:       o['ma'] || o['ma du an'] || '',
-    ten:      o['ten'] || o['ten du an'] || '',
-    loai:     o['loai'] || '',
-    giaidoan: o['giai doan'] || o['giaidoan'] || '',
-    tiendo:   parseFloat(String(o['tien do'] || o['tiendo'] || '0').replace('%','').replace(',','.')) || 0,
-    phutrach: o['phu trach'] || o['phutrach'] || '',
-    hannop:   o['han nop'] || o['hannop'] || '',
-    link:     o['link'] || '#',
+    ma:        o['ma'] || o['ma du an'] || '',
+    ten:       o['ten'] || o['ten du an'] || '',
+    loai:      o['loai'] || '',
+    giaidoan:  o['giai doan du an'] || o['giai doan'] || o['giaidoan'] || '',
+    vaitro:    o['vai tro'] || o['vaitro'] || '',
+    tiendo:    parseFloat(String(o['tien do'] || o['tiendo'] || '0').replace('%','').replace(',','.')) || 0,
+    phutrach:  o['phu trach'] || o['phutrach'] || '',
+    trangthai: o['trang thai'] || o['trangthai'] || '',
+    hannop:    o['han nop'] || o['hannop'] || '',
+    link:      o['link'] || '#',
   };
 }
 
@@ -314,6 +332,7 @@ function dungBoLoc(){
   };
   themLuaChon($('locLoai'), DU_AN.map(d=>d.loai));
   themLuaChon($('locGiaiDoan'), DU_AN.map(d=>d.giaidoan));
+  themLuaChon($('locTrangThai'), DU_AN.map(d=>d.trangthai));
   $('thanhCongCu').hidden = false;
   $('daiSoLieu').hidden = false;
 }
@@ -337,11 +356,12 @@ function veDanhSach(){
   const tuKhoa = boDau($('oTimKiem').value);
   const loai = $('locLoai').value;
   const gd = $('locGiaiDoan').value;
+  const tt = $('locTrangThai').value;
   const sx = $('sapXep').value;
 
   let ds = DU_AN.filter(d=>{
-    const khopTim = !tuKhoa || boDau(d.ten+' '+d.ma+' '+d.phutrach).includes(tuKhoa);
-    return khopTim && (!loai || d.loai===loai) && (!gd || d.giaidoan===gd);
+    const khopTim = !tuKhoa || boDau(d.ten+' '+d.ma+' '+d.phutrach+' '+d.vaitro).includes(tuKhoa);
+    return khopTim && (!loai || d.loai===loai) && (!gd || d.giaidoan===gd) && (!tt || d.trangthai===tt);
   });
 
   ds.sort((a,b)=>{
@@ -376,7 +396,9 @@ function veDanhSach(){
       <h2>${thoatHTML(d.ten)}</h2>
       <div class="card-meta">
         <span>Giai đoạn: <b>${thoatHTML(d.giaidoan)}</b></span>
+        ${d.vaitro ? `<span>Vai trò: <b>${thoatHTML(d.vaitro)}</b></span>` : ''}
         <span>Phụ trách: <b>${thoatHTML(d.phutrach)}</b></span>
+        ${d.trangthai ? `<span class="tt-chip ${lopTrangThai(d.trangthai)}">${thoatHTML(d.trangthai)}</span>` : ''}
       </div>
       ${hanHTML}
       <div class="prog">
@@ -398,6 +420,7 @@ function veDanhSach(){
 $('oTimKiem').addEventListener('input', veDanhSach);
 $('locLoai').addEventListener('change', veDanhSach);
 $('locGiaiDoan').addEventListener('change', veDanhSach);
+$('locTrangThai').addEventListener('change', veDanhSach);
 $('sapXep').addEventListener('change', veDanhSach);
 $('nutLamMoi').addEventListener('click', taiDuLieu);
 
