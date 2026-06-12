@@ -12,9 +12,6 @@
 <script>
 /* ============================================================
    ★★★ CẤU HÌNH — CHỈ CẦN SỬA 2 DÒNG DƯỚI ĐÂY ★★★
-
-   1. LINK_CSV: dán link CSV lấy từ Google Sheets
-   2. TEN_DON_VI: tên công ty / phòng ban của bạn
    ============================================================ */
 
 const LINK_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRTmIdgavLyCkeO1yUx5CvRdkYLH7cCW8tYlJ1QaSbKSpalHUP9pIexdo1dbiC5skg5d4_4L6pCd4lr/pub?gid=0&single=true&output=csv";
@@ -22,9 +19,6 @@ const LINK_SHEETS_EDIT = "https://docs.google.com/spreadsheets/d/1yDsIQZ5OzL0bmm
 const LINK_APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbyUcTHBeIsUGGitZUkRxpl3NEcwNzK0nSqgUD4Rg2__IB1q8m9KBVHImZrbY0UFrKRxgA/exec";
 const LINK_CSV_NHIEMVU = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRTmIdgavLyCkeO1yUx5CvRdkYLH7cCW8tYlJ1QaSbKSpalHUP9pIexdo1dbiC5skg5d4_4L6pCd4lr/pub?gid=2130907067&single=true&output=csv";
 const TEN_DON_VI = "Phòng BIM — KC1";
-
-/* ★★★ HẾT PHẦN CẤU HÌNH ★★★
-   ============================================================ */
 </script>
 
 <style>
@@ -159,9 +153,16 @@ const TEN_DON_VI = "Phòng BIM — KC1";
   footer{margin:50px 20px 20px;border-top:2px solid var(--ink);padding:16px 4px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--concrete);letter-spacing:.06em;text-transform:uppercase;}
   .notice{margin:40px auto;max-width:680px;border:2px solid var(--ink);background:var(--white);padding:30px 34px;}
 
-  /* Chế độ Dark Mode */
+  /* ===== Chế độ Dark Mode ===== */
   [data-theme="dark"] {--paper: #121212; --ink: #E0E0E0; --orange: #FF7043; --concrete: #A0A0A0; --line: #333333; --white: #1E1E1E; --red: #CF6679; --amber: #FFB300; --green: #81C784;}
   [data-theme="dark"] .kanban-col{background:rgba(255,255,255,0.03);}
+  
+  /* Sửa lỗi mờ nhãn dán trong Dark Mode */
+  [data-theme="dark"] .b-cau {background: rgba(29, 78, 216, 0.2); color: #93C5FD; border-color: #3B82F6;}
+  [data-theme="dark"] .b-duong {background: rgba(30, 107, 51, 0.2); color: #86EFAC; border-color: #22C55E;}
+  [data-theme="dark"] .b-ham {background: rgba(112, 26, 117, 0.2); color: #F0ABFC; border-color: #D946EF;}
+  [data-theme="dark"] .b-nutgiao {background: rgba(180, 83, 9, 0.2); color: #FCD34D; border-color: #F59E0B;}
+
   .theme-switch-wrapper{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:12px;}
   .theme-switch{display:inline-block;height:22px;position:relative;width:44px;}
   .theme-switch input{display:none;}
@@ -328,6 +329,7 @@ let DU_AN = [];
 let NHIEM_VU = [];
 let maXacNhanCache = ''; 
 let lanGhiCuoi = 0;
+let maDangSua = null; // Biến này quan trọng để phân biệt Thêm mới và Sửa
 const $ = id => document.getElementById(id);
 
 document.title = TEN_DON_VI + ' — Quản lý dự án';
@@ -337,8 +339,8 @@ $('footDonVi').textContent = TEN_DON_VI;
 /* --- Tiện ích --- */
 function thoatHTML(s){ return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function boDau(s){ return String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').toLowerCase().trim(); }
-function lopBadge(loai){ const k=boDau(loai); if(k.includes('cau')) return 'b-cau'; if(k.includes('duong')) return 'b-duong'; return ''; }
-function lopTrangThai(tt){ const k=boDau(tt); if(k.includes('hoan thanh')) return 'tt-xong'; if(k.includes('ngung')) return 'tt-dung'; if(k.includes('dang')) return 'tt-chay'; return 'tt-khac'; }
+function lopBadge(loai){ const k=boDau(loai); if(k.includes('cau')) return 'b-cau'; if(k.includes('duong')) return 'b-duong'; if(k.includes('ham')) return 'b-ham'; if(k.includes('nut')) return 'b-nutgiao'; return ''; }
+function lopTrangThai(tt){ const k=boDau(tt); if(k.includes('hoan thanh')) return 'tt-xong'; if(k.includes('ngung')||k.includes('treo')) return 'tt-dung'; if(k.includes('dang')) return 'tt-chay'; return 'tt-khac'; }
 function docNgay(s){ const m = String(s ?? '').trim().match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/); if(!m) return null; const d = new Date(+m[3], +m[2]-1, +m[1]); return isNaN(d) ? null : d; }
 function soNgayConLai(d){ if(!d) return null; const homNay = new Date(); homNay.setHours(0,0,0,0); return Math.round((d - homNay) / 86400000); }
 
@@ -403,6 +405,7 @@ function veDanhSach(){
   
   $('stTong').textContent = ds.length;
   $('stTrienKhai').textContent = ds.filter(d => lopTrangThai(d.trangthai) === 'tt-chay').length;
+  $('stTamNgung').textContent = ds.filter(d => lopTrangThai(d.trangthai) === 'tt-dung').length;
   $('stTienDo').textContent = (ds.length ? Math.round(ds.reduce((s,d)=>s+d.tiendo,0)/ds.length) : 0) + '%';
   $('thongBaoTrong').hidden = ds.length > 0;
 
@@ -432,6 +435,9 @@ function veDanhSach(){
         <span class="tasks-title">${sv} hạng mục</span>
         <button class="btn-kanban" type="button" data-mokanban="${thoatHTML(d.ma)}">Mở bảng công việc →</button>
       </div>
+      <div class="card-foot">
+        ${(d.link && d.link !== '#' && d.link !== '-') ? `<a href="${thoatHTML(d.link)}" target="_blank" rel="noopener">Mở portal dự án →</a>` : `<span class="no-link">Chưa có portal</span>`}
+      </div>
     </article>`;
   }).join('');
 }
@@ -440,16 +446,6 @@ function veDanhSach(){
 let madaKanbanHienTai = null;
 let theDangKeo = null;
 
-$('luoiDuAn').addEventListener('click', e => {
-  const nutKanban = e.target.closest('[data-mokanban]');
-  if(nutKanban){
-    madaKanbanHienTai = nutKanban.dataset.mokanban;
-    $('kanbanTitle').textContent = 'BẢNG CÔNG VIỆC: ' + madaKanbanHienTai;
-    veKanban();
-    $('modalKanban').hidden = false;
-  }
-});
-
 function veKanban() {
   if(!madaKanbanHienTai) return;
   const viec = NHIEM_VU.filter(v => v.mada === madaKanbanHienTai);
@@ -457,7 +453,6 @@ function veKanban() {
 
   viec.forEach(v => {
     let tt = v.trangthai;
-    // Chuyển đổi tên cũ sang chuẩn 4 cột mới (nếu có dữ liệu cũ trong Sheets)
     const k = boDau(tt);
     if(k.includes('cho duyet')) tt = 'Trình duyệt KCS / TT';
     else if(k.includes('lam') || k.includes('sua')) tt = 'Đang thực hiện / Chỉnh sửa';
@@ -489,7 +484,6 @@ function batDauKeo(e, nhiemvu) {
 document.addEventListener('dragend', e => {
   if(e.target.classList.contains('k-card')) e.target.classList.remove('k-dragging');
 });
-
 function choPhepTha(e) { e.preventDefault(); }
 
 async function thaThe(e, trangThaiMoi) {
@@ -500,7 +494,7 @@ async function thaThe(e, trangThaiMoi) {
 
   const trangThaiCu = nv.trangthai;
   nv.trangthai = trangThaiMoi; 
-  veKanban(); // Cập nhật giao diện ngay lập tức tạo cảm giác mượt mà
+  veKanban(); 
 
   let mk = maXacNhanCache || prompt('Bảo mật: Nhập mã xác nhận của phòng để lưu thay đổi:');
   if(!mk){ nv.trangthai = trangThaiCu; veKanban(); return; }
@@ -527,7 +521,6 @@ async function thaThe(e, trangThaiMoi) {
   theDangKeo = null;
 }
 
-/* Nút thêm việc trực tiếp từ bảng Kanban */
 $('btnGiaoViecKanban').addEventListener('click', () => {
   $('cv-mada').value = madaKanbanHienTai;
   $('cv-matkhau').value = maXacNhanCache;
@@ -535,31 +528,192 @@ $('btnGiaoViecKanban').addEventListener('click', () => {
   $('modalViec').hidden = false;
 });
 
+/* ====== SỰ KIỆN NÚT BẤM VÀ FORM GHI DỮ LIỆU ====== */
 
-/* ====== Sự kiện Cơ bản ====== */
-['oTimKiem','locLoai','locGiaiDoan','locTrangThai','sapXep'].forEach(id=>$(id).addEventListener('change', veDanhSach));
-$('nutLamMoi').addEventListener('click', taiDuLieu);
-
+/* 1. Mở Form chung */
 function moModal(id){
+  const coAppsScript = typeof LINK_APPS_SCRIPT !== 'undefined' && LINK_APPS_SCRIPT && !LINK_APPS_SCRIPT.includes('DÁN_LINK');
+  if(!coAppsScript){
+    alert('Chức năng này cần cài Apps Script trước.'); return;
+  }
   $('dsMaDA').innerHTML = [...new Set(DU_AN.map(d=>d.ma).filter(Boolean))].map(m=>`<option>${m}</option>`).join('');
   $('dsNguoi').innerHTML = [...new Set(NHIEM_VU.map(d=>d.nguoi).filter(Boolean))].map(n=>`<option>${n}</option>`).join('');
   $(id).hidden = false;
 }
-$('nutThemDuAn').addEventListener('click', ()=>moModal('modalDuAn'));
-$('nutThemViec').addEventListener('click', ()=>moModal('modalViec'));
+
+$('nutThemDuAn').addEventListener('click', ()=>{
+  maDangSua = null;
+  $('tieuDeFormDA').textContent = '➕ Thêm dự án mới';
+  $('guiDuAn').textContent = 'Ghi vào Sheets';
+  $('xoaDuAn').hidden = true;
+  ['da-ma','da-ten','da-loai','da-giaidoan','da-vaitro','da-phutrach','da-hannop','da-link'].forEach(id=>$(id).value='');
+  $('da-tiendo').value = '0';
+  $('da-matkhau').value = maXacNhanCache;
+  $('msgDuAn').textContent = '';
+  moModal('modalDuAn');
+});
+
+$('nutThemViec').addEventListener('click', ()=>{
+  $('cv-matkhau').value = maXacNhanCache;
+  $('msgViec').textContent = '';
+  moModal('modalViec');
+});
+
+/* 2. Bắt sự kiện Click trên thẻ dự án (Mở Kanban / Chỉnh sửa) */
+$('luoiDuAn').addEventListener('click', e => {
+  // Mở Kanban
+  const nutKanban = e.target.closest('[data-mokanban]');
+  if(nutKanban){
+    madaKanbanHienTai = nutKanban.dataset.mokanban;
+    $('kanbanTitle').textContent = 'BẢNG CÔNG VIỆC: ' + madaKanbanHienTai;
+    veKanban();
+    $('modalKanban').hidden = false;
+    return;
+  }
+
+  // Mở Form Sửa Dự Án
+  const nutEdit = e.target.closest('.card-edit');
+  if(nutEdit){
+    const d = DU_AN.find(x => x.ma === nutEdit.dataset.suama);
+    if(!d) return;
+    maDangSua = d.ma;
+    $('tieuDeFormDA').textContent = '✎ Chỉnh sửa: ' + d.ma;
+    $('guiDuAn').textContent = 'Lưu thay đổi';
+    $('xoaDuAn').hidden = false;
+    
+    $('da-ma').value = d.ma;
+    $('da-ten').value = d.ten;
+    $('da-loai').value = d.loai;
+    $('da-giaidoan').value = d.giaidoan;
+    $('da-vaitro').value = d.vaitro;
+    $('da-tiendo').value = d.tiendo;
+    $('da-phutrach').value = d.phutrach;
+    $('da-trangthai').value = d.trangthai || 'Đang triển khai';
+    $('da-hannop').value = d.hannop === '-' ? '' : d.hannop;
+    $('da-link').value = d.link === '-' || d.link === '#' ? '' : d.link;
+    $('da-matkhau').value = maXacNhanCache;
+    $('msgDuAn').textContent = '';
+    moModal('modalDuAn');
+  }
+});
+
+/* 3. Hàm Gửi dữ liệu qua Apps Script */
+async function guiLenSheets(type, data, matkhau, msgEl, nutEl){
+  msgEl.className = 'modal-msg'; msgEl.textContent = 'Đang ghi...';
+  nutEl.disabled = true;
+  try{
+    const res = await fetch(LINK_APPS_SCRIPT, { method:'POST', body: JSON.stringify({type, matkhau, data}) });
+    const kq = await res.json();
+    if(kq.ok){
+      msgEl.className = 'modal-msg ok';
+      msgEl.textContent = '✔ Đã ghi! Web sẽ hiện sau 1–5 phút (bấm ⟳).';
+      return true;
+    }
+    msgEl.className = 'modal-msg err'; msgEl.textContent = '✖ ' + (kq.loi || 'Lỗi không xác định');
+    return false;
+  }catch(err){
+    msgEl.className = 'modal-msg err'; msgEl.textContent = '✖ Không gửi được: ' + err.message;
+    return false;
+  }finally{
+    nutEl.disabled = false;
+  }
+}
+
+/* 4. Xử lý Form Dự án (Thêm/Sửa/Xóa) */
+$('guiDuAn').addEventListener('click', async ()=>{
+  const v = id => $(id).value.trim();
+  const msg = $('msgDuAn');
+  if(!v('da-ma') || !v('da-ten') || !v('da-phutrach')){
+    msg.className='modal-msg err'; msg.textContent='✖ Điền đủ các ô có dấu *'; return;
+  }
+  if(!v('da-matkhau')){
+    msg.className='modal-msg err'; msg.textContent='✖ Nhập mã xác nhận của phòng'; return;
+  }
+  const duLieu = {
+    magoc: maDangSua || '', ma:v('da-ma'), ten:v('da-ten'), loai:v('da-loai'), giaidoan:v('da-giaidoan'),
+    vaitro:v('da-vaitro'), tiendo:v('da-tiendo')||'0', phutrach:v('da-phutrach'),
+    trangthai:v('da-trangthai'), hannop:v('da-hannop')||'-', link:v('da-link')||'-'
+  };
+  const ok = await guiLenSheets(maDangSua ? 'suaduan' : 'duan', duLieu, v('da-matkhau'), msg, $('guiDuAn'));
+  if(ok){
+    maXacNhanCache = v('da-matkhau'); lanGhiCuoi = Date.now();
+    const moi = {...duLieu, tiendo: parseFloat(duLieu.tiendo)||0};
+    delete moi.magoc;
+    
+    if(maDangSua){
+      const i = DU_AN.findIndex(d => d.ma === maDangSua);
+      if(i > -1){
+        DU_AN[i] = moi;
+        if(maDangSua !== moi.ma) NHIEM_VU.forEach(x=>{ if(x.mada===maDangSua) x.mada = moi.ma; });
+      }
+      msg.textContent = '✔ Đã lưu! Màn hình đã cập nhật.';
+      setTimeout(()=>{ $('modalDuAn').hidden = true; }, 900);
+    } else {
+      DU_AN.push(moi);
+      msg.textContent = '✔ Đã thêm! Màn hình đã cập nhật.';
+      ['da-ma','da-ten','da-giaidoan','da-tiendo','da-hannop','da-link'].forEach(id=>$(id).value = id==='da-tiendo'?'0':'');
+    }
+    veDanhSach(); dungBoLoc();
+  }
+});
+
+$('xoaDuAn').addEventListener('click', async ()=>{
+  if(!maDangSua) return;
+  const msg = $('msgDuAn');
+  const mk = $('da-matkhau').value.trim();
+  if(!mk){ msg.className='modal-msg err'; msg.textContent='✖ Nhập mã xác nhận trước khi xóa'; return; }
+  if(!confirm('Xóa hẳn dự án "' + maDangSua + '" khỏi Sheets?\nHành động này không hoàn tác được trên web.')) return;
+  const ok = await guiLenSheets('xoaduan', { magoc: maDangSua }, mk, msg, $('xoaDuAn'));
+  if(ok){
+    maXacNhanCache = mk; lanGhiCuoi = Date.now();
+    DU_AN = DU_AN.filter(d => d.ma !== maDangSua);
+    NHIEM_VU = NHIEM_VU.filter(v => v.mada !== maDangSua);
+    maDangSua = null;
+    veDanhSach(); dungBoLoc();
+    setTimeout(()=>{ $('modalDuAn').hidden = true; }, 900);
+  }
+});
+
+/* 5. Xử lý Form Giao việc mới */
+$('guiViec').addEventListener('click', async ()=>{
+  const v = id => $(id).value.trim();
+  const msg = $('msgViec');
+  if(!v('cv-mada') || !v('cv-nhiemvu') || !v('cv-nguoi')){ msg.className='modal-msg err'; msg.textContent='✖ Điền đủ các ô có dấu *'; return; }
+  if(!v('cv-matkhau')){ msg.className='modal-msg err'; msg.textContent='✖ Nhập mã xác nhận của phòng'; return; }
+  
+  const duLieuViec = {
+    mada:v('cv-mada'), nhiemvu:v('cv-nhiemvu'), nguoi:v('cv-nguoi'),
+    uutien:v('cv-uutien'), han:v('cv-han')||'-', trangthai:v('cv-trangthai'), ghichu:v('cv-ghichu')
+  };
+  const ok = await guiLenSheets('nhiemvu', duLieuViec, v('cv-matkhau'), msg, $('guiViec'));
+  if(ok){
+    maXacNhanCache = v('cv-matkhau'); lanGhiCuoi = Date.now();
+    NHIEM_VU.push({...duLieuViec});
+    veDanhSach();
+    if (madaKanbanHienTai === v('cv-mada')) veKanban();
+    msg.textContent = '✔ Đã giao việc! Màn hình đã cập nhật.';
+    ['cv-nhiemvu','cv-han','cv-ghichu'].forEach(id=>$(id).value='');
+  }
+});
+
+/* ====== BỘ LỌC VÀ ĐÓNG MODAL ====== */
+['oTimKiem','locLoai','locGiaiDoan','locTrangThai','sapXep'].forEach(id=>$(id).addEventListener('change', veDanhSach));
+$('nutLamMoi').addEventListener('click', taiDuLieu);
 
 document.querySelectorAll('[data-dong]').forEach(b=>b.addEventListener('click', e=>e.target.closest('.modal-overlay').hidden = true));
+document.querySelectorAll('.modal-overlay').forEach(ov=>ov.addEventListener('click', e=>{ if(e.target===ov) ov.hidden = true; }));
 
-taiDuLieu();
-setInterval(()=>{ if(Date.now() - lanGhiCuoi > 6*60000) taiDuLieu(); }, 5*60000);
-
-/* Dark Mode */
+/* Dark Mode Trigger */
 const sw = document.querySelector('#checkboxTheme');
 if(localStorage.getItem('theme')==='dark'){ document.documentElement.setAttribute('data-theme','dark'); sw.checked=true; }
 sw.addEventListener('change', e=>{
   const t = e.target.checked?'dark':'light';
   document.documentElement.setAttribute('data-theme', t); localStorage.setItem('theme', t);
 });
+
+/* Khởi chạy tự động */
+taiDuLieu();
+setInterval(()=>{ if(Date.now() - lanGhiCuoi > 6*60000) taiDuLieu(); }, 5*60000);
 </script>
 </body>
 </html>
