@@ -418,7 +418,6 @@ function lopTrangThai(tt){ const k=boDau(tt); if(k.includes('hoan thanh')) retur
 function docNgay(s){ const m = String(s ?? '').trim().match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/); if(!m) return null; const d = new Date(+m[3], +m[2]-1, +m[1]); return isNaN(d) ? null : d; }
 function soNgayConLai(d){ if(!d) return null; const homNay = new Date(); homNay.setHours(0,0,0,0); return Math.round((d - homNay) / 86400000); }
 
-/* Tính toán % tiến độ tự động */
 function tinhTienDo(mada) {
   const viec = NHIEM_VU.filter(v => v.mada === mada);
   if(viec.length === 0) return 0;
@@ -426,16 +425,16 @@ function tinhTienDo(mada) {
   return Math.round((xong / viec.length) * 100);
 }
 
-/* ĐÃ SỬA LỖI TẠI ĐÂY: Thêm nhận diện cột o['ma du an'] để đồng bộ với Tên cột Google Sheets */
+/* ĐÃ SỬA CỰC KỲ CHI TIẾT ĐỂ BẮT MỌI LOẠI TÊN CỘT TRONG GOOGLE SHEETS */
 function chuanHoaViec(row){
   const o = {}; for(const k in row) o[boDau(k)] = String(row[k] ?? '').trim();
   return {
-    mada: o['ma du an'] || o['ma da'] || o['mada'] || '', 
+    mada: o['ma du an'] || o['ma da'] || o['mada'] || o['ma'] || o['thuoc du an'] || '', 
     hangmuc: o['hang muc'] || o['hangmuc'] || o['phan loai'] || '',
-    nhiemvu: o['nhiem vu'] || o['nhiemvu'] || '',
-    nguoi: o['nguoi thuc hien'] || o['nguoi'] || '', 
+    nhiemvu: o['nhiem vu'] || o['nhiemvu'] || o['noi dung cong viec'] || o['noi dung'] || '',
+    nguoi: o['nguoi thuc hien'] || o['nguoi'] || o['nhan su'] || '', 
     uutien: o['uu tien'] || o['uutien'] || '',
-    han: o['han'] || '',
+    han: o['han'] || o['han nop'] || o['deadline'] || '',
     trangthai: o['trang thai'] || o['trangthai'] || 'Chưa bắt đầu',
     ghichu: o['ghi chu'] || o['ghichu'] || ''
   };
@@ -444,9 +443,15 @@ function chuanHoaViec(row){
 function chuanHoaDong(row){
   const o = {}; for(const k in row) o[boDau(k)] = String(row[k] ?? '').trim();
   return {
-    ma: o['ma'] || o['ma du an'] || '', ten: o['ten'] || '', loai: o['loai'] || '',
-    giaidoan: o['giai doan du an'] || o['giai doan'] || '', vaitro: o['vai tro'] || '',
-    phutrach: o['phu trach'] || '', trangthai: o['trang thai'] || '', hannop: o['han nop'] || '', link: o['link'] || '#'
+    ma: o['ma'] || o['ma du an'] || o['ma da'] || o['mada'] || '', 
+    ten: o['ten'] || o['ten du an'] || '', 
+    loai: o['loai'] || o['loai cong trinh'] || '',
+    giaidoan: o['giai doan du an'] || o['giai doan'] || '', 
+    vaitro: o['vai tro'] || o['vai tro bim'] || '',
+    phutrach: o['phu trach'] || o['nguoi phu trach'] || '', 
+    trangthai: o['trang thai'] || o['trangthai'] || '', 
+    hannop: o['han nop'] || o['han'] || '', 
+    link: o['link'] || o['link portal'] || '#'
   };
 }
 
@@ -747,8 +752,6 @@ $('btnGiaoViecKanban').addEventListener('click', () => {
 function moModal(id){
   const coAppsScript = typeof LINK_APPS_SCRIPT !== 'undefined' && LINK_APPS_SCRIPT && !LINK_APPS_SCRIPT.includes('DÁN_LINK');
   if(!coAppsScript){ alert('Chức năng này cần cài Apps Script trước.'); return; }
-  
-  if($('dsMaDA')) $('dsMaDA').innerHTML = [...new Set(DU_AN.map(d=>d.ma).filter(Boolean))].map(m=>`<option>${m}</option>`).join('');
   $(id).hidden = false;
 }
 
@@ -880,7 +883,9 @@ $('xoaDuAn').addEventListener('click', async ()=>{
 $('guiViec').addEventListener('click', async ()=>{
   const v = id => $(id).value.trim();
   const msg = $('msgViec');
-  if(!v('cv-mada') || !v('cv-nhiemvu') || !v('cv-nguoi')){ msg.className='modal-msg err'; msg.textContent='✖ Điền đủ các ô có dấu *'; return; }
+  
+  if(!v('cv-mada')) { msg.className='modal-msg err'; msg.textContent='✖ Lỗi hệ thống: Không tìm thấy Mã dự án. Hãy tắt form và mở lại bảng Kanban.'; return; }
+  if(!v('cv-nhiemvu') || !v('cv-nguoi')){ msg.className='modal-msg err'; msg.textContent='✖ Điền đủ các ô có dấu *'; return; }
   if(!v('cv-matkhau')){ msg.className='modal-msg err'; msg.textContent='✖ Nhập mã xác nhận của phòng'; return; }
   
   const duLieuViec = {
@@ -904,7 +909,8 @@ $('guiViec').addEventListener('click', async ()=>{
       setTimeout(()=>{ $('modalViec').hidden = true; }, 900);
     } else {
       NHIEM_VU.push({...duLieuViec});
-      ['cv-hangmuc','cv-nhiemvu','cv-han','cv-ghichu'].forEach(id=>$(id).value='');
+      ['cv-hangmuc','cv-nhiemvu','cv-ghichu'].forEach(id=>$(id).value='');
+      const dateInput = document.querySelector("#cv-han")._flatpickr; if(dateInput) dateInput.clear();
       setMultiSelect('cv-nguoi', '');
     }
     veDanhSach();
@@ -914,7 +920,6 @@ $('guiViec').addEventListener('click', async ()=>{
 
 /* ====== KHỞI TẠO VÀ SỰ KIỆN ====== */
 
-/* Fix chức năng tìm kiếm thời gian thực */
 $('oTimKiem').addEventListener('input', veDanhSach);
 ['locLoai','locGiaiDoan','locTrangThai','sapXep'].forEach(id=>$(id).addEventListener('change', veDanhSach));
 $('nutLamMoi').addEventListener('click', taiDuLieu);
