@@ -7,10 +7,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700&family=Be+Vietnam+Pro:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mobile-drag-drop@3.0.0-beta.0/default.css">
+<script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@3.0.0-beta.0/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@3.0.0-beta.0/scroll-behaviour.min.js"></script>
 
 <script>
 /* ============================================================
@@ -151,11 +156,11 @@ const DANH_SACH_NHAN_SU = [
   .k-chip:hover {border-color: var(--orange); color: var(--orange);}
   .k-chip.active {background: var(--orange); color: var(--white); border-color: var(--orange);}
   
-  .kanban-wrapper{display:flex;flex:1;gap:12px;padding:16px;padding-top:0; background:var(--paper);overflow-x:auto;min-height:300px;}
-  .kanban-col{flex:1;min-width:240px;background:rgba(0,0,0,0.03);border:1px solid var(--line);border-radius:4px;display:flex;flex-direction:column;padding:10px;}
+  .kanban-wrapper{display:flex;flex:1;gap:12px;padding:16px;padding-top:0; background:var(--paper);overflow-x:auto; -webkit-overflow-scrolling: touch; min-height:300px;}
+  .kanban-col{flex:1;min-width:260px;background:rgba(0,0,0,0.03);border:1px solid var(--line);border-radius:4px;display:flex;flex-direction:column;padding:10px;}
   .k-head{font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:15px;text-transform:uppercase;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid var(--ink);}
-  .k-list{flex:1;min-height:50px;} /* Khu vực thả thẻ */
-  .k-card{background:var(--white);border:1px solid var(--line);border-left:4px solid var(--ink);padding:12px;margin-bottom:10px;border-radius:2px;cursor:grab;box-shadow:0 1px 3px rgba(0,0,0,0.05);transition:transform .1s;}
+  .k-list{flex:1;min-height:50px;} 
+  .k-card{background:var(--white);border:1px solid var(--line);border-left:4px solid var(--ink);padding:12px;margin-bottom:10px;border-radius:2px;cursor:grab;box-shadow:0 1px 3px rgba(0,0,0,0.05);transition:transform .1s; touch-action: none; /* Cần thiết cho kéo thả trên điện thoại */}
   .k-card:active{cursor:grabbing;transform:scale(0.98);}
   .k-card.k-dragging{opacity:0.4;background:#f0f0f0;}
   .k-card[hidden]{display: none !important;}
@@ -197,7 +202,7 @@ const DANH_SACH_NHAN_SU = [
   [data-theme="dark"] {--paper: #121212; --ink: #E0E0E0; --orange: #FF7043; --concrete: #A0A0A0; --line: #333333; --white: #1E1E1E; --red: #CF6679; --amber: #FFB300; --green: #81C784;}
   [data-theme="dark"] .kanban-col{background:rgba(255,255,255,0.03);}
   
-  /* Sửa lỗi mờ nhãn dán "Loại" và "Trạng thái" trong Dark Mode - Nền trong suốt & viền màu sáng */
+  /* Sửa lỗi mờ nhãn dán "Loại" và "Trạng thái" trong Dark Mode */
   [data-theme="dark"] .b-cau, [data-theme="dark"] .tt-chay {background: rgba(29, 78, 216, 0.15); color: #93C5FD; border-color: rgba(59, 130, 246, 0.5);}
   [data-theme="dark"] .b-duong, [data-theme="dark"] .tt-xong {background: rgba(30, 107, 51, 0.15); color: #86EFAC; border-color: rgba(34, 197, 94, 0.5);}
   [data-theme="dark"] .b-ham, [data-theme="dark"] .tt-dung {background: rgba(180, 83, 9, 0.15); color: #FCD34D; border-color: rgba(245, 158, 11, 0.5);}
@@ -357,9 +362,10 @@ const DANH_SACH_NHAN_SU = [
       <button class="modal-close" type="button" data-dong>✕</button>
     </div>
     <div class="modal-body">
-      <div class="f-group f-full"><label>Mã dự án *</label><input id="cv-mada" list="dsMaDA">
-        <datalist id="dsMaDA"></datalist></div>
-      <div class="f-group"><label>Hạng mục</label><input id="cv-hangmuc" placeholder="VD: Kiến trúc, Kết cấu, MEP..."></div>
+      
+      <input type="hidden" id="cv-mada">
+
+      <div class="f-group f-full"><label>Hạng mục</label><input id="cv-hangmuc" placeholder="VD: Kiến trúc, Kết cấu, MEP..."></div>
       <div class="f-group f-full"><label>Nội dung công việc *</label><input id="cv-nhiemvu" placeholder="VD: Dựng model cầu Km2+100"></div>
       
       <div class="f-group f-full"><label>Người thực hiện *</label>
@@ -741,7 +747,10 @@ $('btnGiaoViecKanban').addEventListener('click', () => {
 function moModal(id){
   const coAppsScript = typeof LINK_APPS_SCRIPT !== 'undefined' && LINK_APPS_SCRIPT && !LINK_APPS_SCRIPT.includes('DÁN_LINK');
   if(!coAppsScript){ alert('Chức năng này cần cài Apps Script trước.'); return; }
-  $('dsMaDA').innerHTML = [...new Set(DU_AN.map(d=>d.ma).filter(Boolean))].map(m=>`<option>${m}</option>`).join('');
+  
+  // Đã sửa dòng này: Tránh lỗi null nếu ẩn ô mã dự án
+  if($('dsMaDA')) $('dsMaDA').innerHTML = [...new Set(DU_AN.map(d=>d.ma).filter(Boolean))].map(m=>`<option>${m}</option>`).join('');
+  
   $(id).hidden = false;
 }
 
@@ -960,6 +969,14 @@ const fpConfig = {
 };
 flatpickr("#da-hannop", fpConfig);
 flatpickr("#cv-han", fpConfig);
+
+/* Kích hoạt Kéo thả trên Mobile (Touch Events Polyfill) */
+MobileDragDrop.polyfill({
+  dragImageTranslateOverride: MobileDragDrop.scrollBehaviourDragImageTranslateOverride
+});
+// Yêu cầu để tránh màn hình bị cuộn khi đang kéo thả
+window.addEventListener('touchmove', function() {}, {passive: false});
+
 
 /* Dark Mode Trigger */
 const sw = document.querySelector('#checkboxTheme');
