@@ -254,7 +254,7 @@ const DANH_SACH_NHAN_SU = [
       </div>
       <span class="time" id="lanDongBo">Chưa đồng bộ</span>
       <button class="btn-refresh btn-add" id="nutThemDuAn" type="button">➕ Thêm dự án</button>
-      <button class="btn-refresh btn-add" id="nutThemViec" type="button">🗒 Khai báo công việc</button>
+      <button class="btn-refresh btn-add" id="nutThemViec" type="button" style="display:none;">🗒 Khai báo công việc</button>
       <button class="btn-refresh" id="nutLamMoi" type="button">⟳ Cập nhật dữ liệu</button>
     </div>
   </div>
@@ -426,10 +426,11 @@ function tinhTienDo(mada) {
   return Math.round((xong / viec.length) * 100);
 }
 
+/* ĐÃ SỬA LỖI TẠI ĐÂY: Thêm nhận diện cột o['ma du an'] để đồng bộ với Tên cột Google Sheets */
 function chuanHoaViec(row){
   const o = {}; for(const k in row) o[boDau(k)] = String(row[k] ?? '').trim();
   return {
-    mada: o['ma da'] || o['mada'] || '', 
+    mada: o['ma du an'] || o['ma da'] || o['mada'] || '', 
     hangmuc: o['hang muc'] || o['hangmuc'] || o['phan loai'] || '',
     nhiemvu: o['nhiem vu'] || o['nhiemvu'] || '',
     nguoi: o['nguoi thuc hien'] || o['nguoi'] || '', 
@@ -589,7 +590,7 @@ function veKanban() {
   if(!madaKanbanHienTai) return;
   const viecAll = NHIEM_VU.filter(v => v.mada === madaKanbanHienTai);
   
-  /* Tạo danh sách bộ lọc: Lấy tất cả Hạng mục & Nhân sự */
+  /* Tạo danh sách bộ lọc */
   const dhm = [...new Set(viecAll.map(v => v.hangmuc).filter(Boolean))];
   const dng = [...new Set(viecAll.flatMap(v => v.nguoi.split(',').map(s=>s.trim())).filter(Boolean))];
 
@@ -715,7 +716,6 @@ function suaNhiemVu(e, tenNhiemVu) {
   setMultiSelect('cv-nguoi', nv.nguoi);
   $('cv-uutien').value = nv.uutien;
   
-  // Nạp lại ngày cho Flatpickr
   const dateInput = document.querySelector("#cv-han")._flatpickr;
   if(dateInput) dateInput.setDate(nv.han === '-' ? '' : nv.han, false, "d/m/Y");
 
@@ -748,9 +748,7 @@ function moModal(id){
   const coAppsScript = typeof LINK_APPS_SCRIPT !== 'undefined' && LINK_APPS_SCRIPT && !LINK_APPS_SCRIPT.includes('DÁN_LINK');
   if(!coAppsScript){ alert('Chức năng này cần cài Apps Script trước.'); return; }
   
-  // Đã sửa dòng này: Tránh lỗi null nếu ẩn ô mã dự án
   if($('dsMaDA')) $('dsMaDA').innerHTML = [...new Set(DU_AN.map(d=>d.ma).filter(Boolean))].map(m=>`<option>${m}</option>`).join('');
-  
   $(id).hidden = false;
 }
 
@@ -767,24 +765,12 @@ $('nutThemDuAn').addEventListener('click', ()=>{
   moModal('modalDuAn');
 });
 
-$('nutThemViec').addEventListener('click', ()=>{
-  nhiemvuDangSua = null;
-  $('tieuDeFormCV').textContent = '🗒 Khai báo công việc';
-  $('guiViec').textContent = 'Ghi vào Sheets';
-  ['cv-mada','cv-hangmuc','cv-nhiemvu','cv-ghichu'].forEach(id=>$(id).value='');
-  const d2 = document.querySelector("#cv-han")._flatpickr; if(d2) d2.clear();
-  setMultiSelect('cv-nguoi', '');
-  $('cv-matkhau').value = maXacNhanCache;
-  $('msgViec').textContent = '';
-  moModal('modalViec');
-});
-
 $('luoiDuAn').addEventListener('click', e => {
   const nutKanban = e.target.closest('[data-mokanban]');
   if(nutKanban){
     madaKanbanHienTai = nutKanban.dataset.mokanban;
     $('kanbanTitle').textContent = 'BẢNG CÔNG VIỆC: ' + madaKanbanHienTai;
-    kFilter = { hangmuc: null, nguoi: null }; // Reset bộ lọc
+    kFilter = { hangmuc: null, nguoi: null }; 
     veKanban();
     $('modalKanban').hidden = false;
     return;
@@ -974,9 +960,7 @@ flatpickr("#cv-han", fpConfig);
 MobileDragDrop.polyfill({
   dragImageTranslateOverride: MobileDragDrop.scrollBehaviourDragImageTranslateOverride
 });
-// Yêu cầu để tránh màn hình bị cuộn khi đang kéo thả
 window.addEventListener('touchmove', function() {}, {passive: false});
-
 
 /* Dark Mode Trigger */
 const sw = document.querySelector('#checkboxTheme');
