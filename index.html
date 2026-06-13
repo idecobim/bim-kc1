@@ -81,12 +81,37 @@
   </div>
 </header>
 
+<div class="view-tabs">
+  <button class="view-tab active" type="button" data-view="duan"><i class="vt-i">▦</i> Dự án</button>
+  <button class="view-tab" type="button" data-view="tonghop"><i class="vt-i">⊞</i> Bảng tổng hợp</button>
+  <button class="view-tab" type="button" data-view="toi"><i class="vt-i">☑</i> Việc của tôi</button>
+</div>
+
 <div id="khuNoiDung">
   <div class="loading" id="dangTai">ĐANG ĐỒNG BỘ DỮ LIỆU TỪ GOOGLE SHEETS<div class="bar"></div></div>
 </div>
 
 <main class="grid" id="luoiDuAn"></main>
 <p class="empty" id="thongBaoTrong" hidden>— Không tìm thấy dự án phù hợp —</p>
+
+<section id="viewTongHop" hidden>
+  <div class="th-cong-cu">
+    <input type="search" id="thTim" placeholder="🔍 Tìm hạng mục, nội dung, người..." autocomplete="off">
+    <select id="thNguoi"><option value="">Tất cả nhân sự</option></select>
+    <button id="thMoTatCa" type="button" class="th-nut">Mở tất cả</button>
+    <button id="thGapTatCa" type="button" class="th-nut">Gập tất cả</button>
+  </div>
+  <div id="thCay" class="th-cay"></div>
+  <p class="th-ghichu">% của nhánh cha tự tính trung bình từ các việc con (Xong 100 · Đang/Duyệt 50 · Chưa 0). Nhân viên kéo trạng thái ở Kanban hoặc "Việc của tôi", số ở đây tự lên.</p>
+</section>
+
+<section id="viewToi" hidden>
+  <div class="toi-cong-cu">
+    <label class="toi-lbl">Tôi là:</label>
+    <select id="toiNguoi"><option value="">— Chọn tên —</option></select>
+  </div>
+  <div id="toiNoiDung"></div>
+</section>
 
 <!-- ===== KANBAN ===== -->
 <div class="modal-overlay" id="modalKanban" hidden>
@@ -166,6 +191,7 @@
     </div>
     <div class="modal-body">
       <input type="hidden" id="cv-mada">
+      <div class="f-group f-full"><label>Phân cấp (ngăn bằng dấu ›)</label><input id="cv-phancap" list="dsPhanCap" placeholder="VD: PHẦN CẦU › Cầu vượt nhánh B › Kết cấu phần trên" autocomplete="off"><datalist id="dsPhanCap"></datalist></div>
       <div class="f-group f-full"><label>Hạng mục</label><input id="cv-hangmuc" placeholder="VD: Mô hình, KCPT, KCPD, Hồ sơ..." autocomplete="off"></div>
       <div class="f-group f-full"><label>Nội dung công việc *</label><input id="cv-nhiemvu" placeholder="VD: Dựng model cầu Km2+100" autocomplete="off"></div>
       <div class="f-group f-full"><label>Người thực hiện *</label><div class="ms-wrapper" id="ms-nguoi-container"></div></div>
