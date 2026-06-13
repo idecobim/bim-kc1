@@ -18,8 +18,8 @@
 <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@3.0.0-beta.0/scroll-behaviour.min.js"></script>
 
 <!-- ===== 3 FILE CUA HE THONG ===== -->
-<link rel="stylesheet" href="giaodien.css?v=3">
-<script src="cauhinh.js?v=3"></script>
+<link rel="stylesheet" href="giaodien.css?v=4">
+<script src="cauhinh.js?v=4"></script>
 </head>
 
 <div id="toast"></div>
@@ -67,6 +67,14 @@
     </div>
   </div>
 </header>
+
+<div id="bangCanhBao" class="canh-bao" hidden>
+  <button class="cb-dau" type="button" id="cbToggle">
+    <span class="cb-trai">⚠ <b id="cbSo">0</b> việc đã trễ hạn — bấm để xem</span>
+    <span class="cb-mui" id="cbMui">▾</span>
+  </button>
+  <div class="cb-chitiet" id="cbChiTiet" hidden></div>
+</div>
 
 <div class="view-tabs">
   <button class="view-tab active" type="button" data-view="duan">Dự án</button>
@@ -191,7 +199,6 @@
     <div class="modal-body">
       <input type="hidden" id="cv-mada">
       <div class="f-group f-full"><label>Phân cấp (ngăn bằng dấu ›)</label><input id="cv-phancap" list="dsPhanCap" placeholder="VD: PHẦN CẦU › Cầu vượt nhánh B › Kết cấu phần trên" autocomplete="off"><datalist id="dsPhanCap"></datalist></div>
-      <div class="f-group f-full"><label>Hạng mục</label><input id="cv-hangmuc" placeholder="VD: Mô hình, KCPT, KCPD, Hồ sơ..." autocomplete="off"></div>
       <div class="f-group f-full"><label>Nội dung công việc *</label><input id="cv-nhiemvu" placeholder="VD: Dựng model cầu Km2+100" autocomplete="off"></div>
       <div class="f-group f-full"><label>Người thực hiện *</label><div class="ms-wrapper" id="ms-nguoi-container"></div></div>
       <div class="f-group"><label>Ưu tiên</label>
@@ -219,6 +226,6 @@
   <span>Nguồn dữ liệu: Google Sheets · Tự làm mới mỗi 5 phút</span>
 </footer>
 
-<script src="xuly.js?v=3"></script>
+<script src="xuly.js?v=4"></script>
 </body>
 </html>
