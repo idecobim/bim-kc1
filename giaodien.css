@@ -32,7 +32,7 @@
   .hs.warn b{color:var(--orange)}
 
   .toolbar{display:flex;flex-wrap:wrap;margin:0 20px 18px;border:2px solid var(--ink)}
-  .toolbar input,.toolbar select{font-family:'Be Vietnam Pro',sans-serif;font-size:14px;padding:12px 16px;border:none;border-right:1px solid var(--line);background:var(--white);color:var(--ink);}
+  .toolbar input,.toolbar select{font-family:'Be Vietnam Pro',sans-serif;font-size:13.5px;padding:8px 13px;border:none;border-right:1px solid var(--line);background:var(--white);color:var(--ink);}
   .toolbar input{flex:1;min-width:200px}
   .toolbar select{cursor:pointer}
 
@@ -210,17 +210,13 @@
 
   /* ----- Bảng tổng hợp (cây) ----- */
   #viewTongHop{margin:0 20px 24px;border:2px solid var(--ink);background:var(--white)}
-  .th-cong-cu{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px;border-bottom:2px solid var(--ink)}
-  .th-cong-cu input[type=search]{flex:1;min-width:180px;font-family:'Be Vietnam Pro',sans-serif;font-size:14px;padding:8px 12px;border:1px solid var(--line);background:var(--paper);color:var(--ink)}
-  .th-cong-cu select{font-family:'Be Vietnam Pro',sans-serif;font-size:14px;padding:8px 10px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer}
+  .th-cong-cu{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 12px;border-bottom:2px solid var(--ink)}
+  .th-cong-cu input[type=search]{flex:1;min-width:180px;font-family:'Be Vietnam Pro',sans-serif;font-size:13.5px;padding:7px 12px;border:1px solid var(--line);background:var(--paper);color:var(--ink)}
+  .th-cong-cu select{font-family:'Be Vietnam Pro',sans-serif;font-size:13.5px;padding:7px 10px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer}
   .th-nut{font-family:'Saira Condensed',sans-serif;font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.05em;border:1px solid var(--ink);background:var(--white);color:var(--ink);padding:7px 12px;border-radius:2px}
   .th-nut:hover{background:var(--ink);color:var(--white)}
   .th-cay{max-height:62vh;overflow-y:auto}
   #viewTongHop{--w-tt:84px;--w-ng:120px;--w-pct:130px}
-  .th-cot-chinh{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--concrete)}
-  .th-cot-chinh .th-cc-lbl{text-transform:uppercase;letter-spacing:.05em}
-  .th-cot-chinh label{display:flex;align-items:center;gap:6px}
-  .th-cot-chinh input[type=range]{width:90px}
   .th-head{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--ink);color:var(--white);font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase}
   .th-head .th-ten{flex:1;color:var(--white)}
   .th-head .th-c-tt,.th-head .th-c-ng,.th-head .th-c-pct{color:var(--white)}
@@ -245,9 +241,9 @@
 
   /* ----- Việc của tôi ----- */
   #viewToi{margin:0 20px 24px;border:2px solid var(--ink);background:var(--white)}
-  .toi-cong-cu{display:flex;align-items:center;gap:10px;padding:14px;border-bottom:2px solid var(--ink)}
-  .toi-lbl{font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:18px;text-transform:uppercase}
-  .toi-cong-cu select{font-family:'Be Vietnam Pro',sans-serif;font-size:15px;padding:8px 12px;border:1px solid var(--ink);background:var(--paper);color:var(--ink);cursor:pointer;min-width:200px}
+  .toi-cong-cu{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 12px;border-bottom:2px solid var(--ink)}
+  .toi-lbl{font-family:'Saira Condensed',sans-serif;font-weight:600;font-size:14px;text-transform:uppercase;letter-spacing:.04em}
+  .toi-cong-cu select{font-family:'Be Vietnam Pro',sans-serif;font-size:13.5px;padding:7px 11px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer}
   .toi-tom{display:flex;gap:16px;flex-wrap:wrap;padding:12px 16px;font-family:'IBM Plex Mono',monospace;font-size:13px;border-bottom:1px solid var(--line);background:var(--paper)}
   .toi-da{padding:10px 16px 4px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--orange);font-weight:600}
   .toi-viec{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line)}
@@ -282,12 +278,17 @@
 
 
   /* ----- Điều khiển & cây trong "Việc của tôi" ----- */
-  .toi-cc-spacer{flex:1}
-  .toi-cong-cu{flex-wrap:wrap}
-  .toi-cong-cu #toiCheDo,.toi-cong-cu #toiSapXep{font-family:'Be Vietnam Pro',sans-serif;font-size:13px;padding:7px 10px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer}
+  .tb-spacer{flex:1}
+  .tb-sort{display:flex;align-items:center;gap:6px;padding-left:10px;border-left:1px solid var(--line)}
+  .tb-sort-lbl{font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--concrete)}
   .toi-da-row{display:flex;align-items:center;gap:8px;padding:9px 16px;background:var(--ink);color:var(--white);cursor:pointer;border-top:1px solid var(--line)}
   .toi-da-ten{flex:1;min-width:0;font-family:'Saira Condensed',sans-serif;font-weight:600;font-size:15px;letter-spacing:.03em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .toi-da-bar{width:120px;height:7px;border-radius:4px;background:rgba(255,255,255,.25);overflow:hidden;flex-shrink:0}
   .toi-da-bar span{display:block;height:100%}
   .toi-da-pct{width:46px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12px;flex-shrink:0;color:#fff}
   #toiNoiDung .th-row{padding-left:0}
+
+  /* ----- Context menu "Việc của tôi" ----- */
+  .ctx-divider{height:1px;background:var(--line);margin:4px 0;padding:0!important;pointer-events:none}
+  #toiContextMenu .ctx-tt{font-family:'Be Vietnam Pro',sans-serif;font-size:13px}
+  #toiContextMenu .ctx-tt:hover{background:var(--paper)}

@@ -367,6 +367,18 @@ async function thaThe(trangThaiMoi){
 
 /* ====== Menu chuột phải ====== */
 document.addEventListener('contextmenu', e=>{
+  const toiRow = e.target.closest('#toiNoiDung .toi-viec, #toiNoiDung .th-leaf');
+  if(toiRow){
+    const uid = Number(toiRow.dataset.uid || toiRow.dataset.cbuid);
+    if(uid){
+      e.preventDefault(); e.stopPropagation();
+      toiCtxUid = uid;
+      const menu = $('toiContextMenu');
+      menu.style.top = e.pageY + 'px'; menu.style.left = e.pageX + 'px';
+      menu.classList.add('show');
+      return;
+    }
+  }
   const kCard = e.target.closest('.k-card');
   if(kCard){
     e.preventDefault(); e.stopPropagation();
@@ -882,15 +894,6 @@ $('thMoTatCa').addEventListener('click', ()=>{
   veTongHop();
 });
 $('thGapTatCa').addEventListener('click', ()=>{ moNhanh.clear(); veTongHop(); });
-/* Chỉnh độ rộng 3 cột bằng biến CSS */
-function apDungColWidth(){
-  const c = $('viewTongHop');
-  if($('wTt')) c.style.setProperty('--w-tt', $('wTt').value+'px');
-  if($('wNg')) c.style.setProperty('--w-ng', $('wNg').value+'px');
-  if($('wPct')) c.style.setProperty('--w-pct', $('wPct').value+'px');
-}
-['wTt','wNg','wPct'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('input', apDungColWidth); });
-apDungColWidth();
 
 /* ---------- VIỆC CỦA TÔI ---------- */
 let cheDoToi = 'list';   /* list | cay */
@@ -929,12 +932,27 @@ function veViecCuaToi(){
   }
   if($('toiCheDo')) $('toiCheDo').value = cheDoToi;
   if($('toiSapXep')) $('toiSapXep').value = sapXepToi;
+  /* nút mở/gập chỉ hiện khi xem dạng cây */
+  if($('toiMoTatCa')) $('toiMoTatCa').hidden = (cheDoToi!=='cay');
+  if($('toiGapTatCa')) $('toiGapTatCa').hidden = (cheDoToi!=='cay');
   nguoiCuaToi = selT.value;
   const wrap = $('toiNoiDung');
-  if(!nguoiCuaToi){ wrap.innerHTML = '<div class="th-empty">Chọn tên bạn ở trên để xem việc được giao.</div>'; return; }
+  if(!nguoiCuaToi){ wrap.innerHTML = '<div class="th-empty">Chọn tên bạn ở trên để xem việc được giao.</div>'; if($('toiLocDA')) $('toiLocDA').innerHTML='<option value="">Tất cả dự án</option>'; return; }
 
-  const viec = NHIEM_VU.filter(v => v.nguoi.split(',').map(s=>s.trim()).includes(nguoiCuaToi));
-  if(!viec.length){ wrap.innerHTML = '<div class="th-empty">Không có việc nào giao cho '+thoatHTML(nguoiCuaToi)+'.</div>'; return; }
+  let viec = NHIEM_VU.filter(v => v.nguoi.split(',').map(s=>s.trim()).includes(nguoiCuaToi));
+  if(!viec.length){ wrap.innerHTML = '<div class="th-empty">Không có việc nào giao cho '+thoatHTML(nguoiCuaToi)+'.</div>'; if($('toiLocDA')) $('toiLocDA').innerHTML='<option value="">Tất cả dự án</option>'; return; }
+
+  /* nạp bộ lọc dự án theo các dự án người này có việc */
+  const selDA = $('toiLocDA');
+  if(selDA){
+    const giuLai = selDA.value;
+    const maDS = [...new Set(viec.map(v=>v.mada))].sort();
+    selDA.innerHTML = '<option value="">Tất cả dự án</option>'
+      + maDS.map(ma=>{ const d=DU_AN.find(x=>x.ma===ma); return '<option value="'+thoatHTML(ma)+'">'+thoatHTML(ma)+(d?' — '+thoatHTML(d.ten):'')+'</option>'; }).join('');
+    if(maDS.includes(giuLai)) selDA.value = giuLai;
+    if(selDA.value) viec = viec.filter(v=>v.mada===selDA.value);
+    if(!viec.length){ wrap.innerHTML = '<div class="th-empty">Không có việc trong dự án đã lọc.</div>'; return; }
+  }
 
   const theoDA = {};
   viec.forEach(v=>{ (theoDA[v.mada] = theoDA[v.mada] || []).push(v); });
@@ -1028,6 +1046,13 @@ if($('toiSapXep')) $('toiSapXep').addEventListener('change', e=>{
   try{ localStorage.setItem('sapXepToi', sapXepToi); }catch(x){}
   veViecCuaToi();
 });
+if($('toiLocDA')) $('toiLocDA').addEventListener('change', veViecCuaToi);
+if($('toiMoTatCa')) $('toiMoTatCa').addEventListener('click', ()=>{
+  const viec = NHIEM_VU.filter(v => v.nguoi.split(',').map(s=>s.trim()).includes(nguoiCuaToi));
+  viec.forEach(v=>{ moNhanhToi.add(v.mada); let key=v.mada; tachCap(v.phancap).forEach(seg=>{ key+='/'+seg; moNhanhToi.add(key); }); });
+  veViecCuaToi();
+});
+if($('toiGapTatCa')) $('toiGapTatCa').addEventListener('click', ()=>{ moNhanhToi.clear(); veViecCuaToi(); });
 /* Bấm ✎ mở form sửa đầy đủ (giống Kanban) + gập/mở cây việc của tôi */
 $('toiNoiDung').addEventListener('click', e=>{
   const nut = e.target.closest('[data-suatoi]');
@@ -1039,6 +1064,23 @@ $('toiNoiDung').addEventListener('click', e=>{
   const la = e.target.closest('.th-leaf');
   if(la && la.dataset.cbuid){ moFormSuaViec(Number(la.dataset.cbuid)); return; }
 });
+/* Cập nhật trạng thái 1 việc về Sheets (dùng cho dropdown + chuột phải) */
+async function capNhatTrangThaiViec(uid, ttMoi){
+  const nv = NHIEM_VU.find(v=>v.uid===uid); if(!nv) return false;
+  const ttCu = nv.trangthai;
+  if(chuanCot(ttCu)===ttMoi) return false;
+  let mk = maXacNhanCache || prompt('Nhập mã xác nhận của phòng để lưu:');
+  if(!mk) return false;
+  nv.trangthai = ttMoi;
+  try{
+    const res = await fetch(LINK_APPS_SCRIPT, { method:'POST',
+      body: JSON.stringify({ type:'sua_trangthai_nhiemvu', matkhau: mk,
+        data:{ mada: nv.mada, trangthai: ttMoi, items:[{nhiemvu:nv.nhiemvu, nguoi:nv.nguoi, phancap:nv.phancap}] } }) });
+    const kq = await res.json();
+    if(kq.ok){ maXacNhanCache = mk; lanGhiCuoi = Date.now(); baoToast('✔ Đã cập nhật', 'ok'); veViecCuaToi(); veDanhSach(); return true; }
+    nv.trangthai = ttCu; baoToast('✖ '+(kq.loi||'Lỗi'), 'err'); return false;
+  }catch(err){ nv.trangthai = ttCu; baoToast('✖ '+err.message, 'err'); return false; }
+}
 /* Đổi trạng thái ngay trong "Việc của tôi" — ghi 1 việc về Sheets */
 $('toiNoiDung').addEventListener('change', async e=>{
   const sel = e.target.closest('.toi-tt'); if(!sel) return;
@@ -1046,24 +1088,23 @@ $('toiNoiDung').addEventListener('change', async e=>{
   const nv = NHIEM_VU.find(v=>v.uid===uid); if(!nv) return;
   const ttMoi = sel.value, ttCu = nv.trangthai;
   if(chuanCot(ttCu)===ttMoi) return;
-  let mk = maXacNhanCache || prompt('Nhập mã xác nhận của phòng để lưu:');
-  if(!mk){ sel.value = chuanCot(ttCu); return; }
   sel.disabled = true;
-  nv.trangthai = ttMoi;
-  try{
-    const res = await fetch(LINK_APPS_SCRIPT, { method:'POST',
-      body: JSON.stringify({ type:'sua_trangthai_nhiemvu', matkhau: mk,
-        data:{ mada: nv.mada, trangthai: ttMoi, items:[{nhiemvu:nv.nhiemvu, nguoi:nv.nguoi, phancap:nv.phancap}] } }) });
-    const kq = await res.json();
-    if(kq.ok){ maXacNhanCache = mk; lanGhiCuoi = Date.now(); baoToast('✔ Đã cập nhật', 'ok'); veViecCuaToi(); veDanhSach(); }
-    else { nv.trangthai = ttCu; sel.value = chuanCot(ttCu); baoToast('✖ '+(kq.loi||'Lỗi'), 'err'); }
-  }catch(err){ nv.trangthai = ttCu; sel.value = chuanCot(ttCu); baoToast('✖ '+err.message, 'err'); }
-  finally{ sel.disabled = false; }
+  const ok = await capNhatTrangThaiViec(uid, ttMoi);
+  if(!ok) sel.value = chuanCot(ttCu);
+  sel.disabled = false;
 });
+/* (handler cũ giữ tương thích — không dùng nữa) */
 
 /* Nút chuyển màn hình */
 document.querySelectorAll('.view-tab').forEach(b=>{
   b.addEventListener('click', ()=>doiView(b.dataset.view));
+});
+
+/* Context menu cho "Việc của tôi" */
+let toiCtxUid = null;
+$('ctx-toi-edit').onclick = ()=>{ dongCtx(); if(toiCtxUid) moFormSuaViec(toiCtxUid); };
+document.querySelectorAll('#toiContextMenu .ctx-tt').forEach(li=>{
+  li.onclick = async ()=>{ const tt = li.dataset.tt; const uid = toiCtxUid; dongCtx(); if(uid) await capNhatTrangThaiViec(uid, tt); };
 });
 
 /* Gợi ý phân cấp đã dùng (cho ô cv-phancap) */

@@ -18,8 +18,8 @@
 <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@3.0.0-beta.0/scroll-behaviour.min.js"></script>
 
 <!-- ===== 3 FILE CUA HE THONG ===== -->
-<link rel="stylesheet" href="giaodien.css?v=6">
-<script src="cauhinh.js?v=6"></script>
+<link rel="stylesheet" href="giaodien.css?v=7">
+<script src="cauhinh.js?v=7"></script>
 </head>
 
 <div id="toast"></div>
@@ -36,6 +36,17 @@
   <ul>
     <li id="ctx-t-edit">✎ Chỉnh sửa nội dung</li>
     <li id="ctx-t-del" class="danger">🗑 Xóa công việc</li>
+  </ul>
+</div>
+
+<div id="toiContextMenu" class="context-menu">
+  <ul>
+    <li id="ctx-toi-edit">✎ Cập nhật thông tin</li>
+    <li class="ctx-divider"></li>
+    <li class="ctx-tt" data-tt="Chưa bắt đầu">○ Chưa bắt đầu</li>
+    <li class="ctx-tt" data-tt="Đang thực hiện / Chỉnh sửa">◐ Đang thực hiện</li>
+    <li class="ctx-tt" data-tt="Trình duyệt KCS / TT">◑ Trình duyệt KCS/TT</li>
+    <li class="ctx-tt" data-tt="Hoàn thành">● Hoàn thành</li>
   </ul>
 </div>
 
@@ -108,12 +119,6 @@
     <button id="thMoTatCa" type="button" class="th-nut">Mở tất cả</button>
     <button id="thGapTatCa" type="button" class="th-nut">Gập tất cả</button>
   </div>
-  <div class="th-cot-chinh">
-    <span class="th-cc-lbl">Độ rộng cột:</span>
-    <label>Trạng thái <input type="range" id="wTt" min="60" max="140" value="84" step="4"></label>
-    <label>Nhân sự <input type="range" id="wNg" min="80" max="220" value="120" step="5"></label>
-    <label>Tiến độ <input type="range" id="wPct" min="90" max="200" value="130" step="5"></label>
-  </div>
   <div class="th-head">
     <span class="th-ten">Hạng mục / công việc</span>
     <span class="th-c-tt">Trạng thái</span>
@@ -128,16 +133,21 @@
   <div class="toi-cong-cu">
     <label class="toi-lbl">Tôi là:</label>
     <select id="toiNguoi"><option value="">— Chọn tên —</option></select>
-    <span class="toi-cc-spacer"></span>
+    <select id="toiLocDA"><option value="">Tất cả dự án</option></select>
     <select id="toiCheDo" title="Cách hiển thị">
       <option value="list">Dạng danh sách</option>
       <option value="cay">Dạng cây theo dự án</option>
     </select>
-    <select id="toiSapXep" title="Sắp xếp dự án">
-      <option value="tiendo-asc">Tiến độ thấp → cao</option>
-      <option value="tiendo-desc">Tiến độ cao → thấp</option>
-      <option value="uutien">Ưu tiên cao → thấp</option>
-    </select>
+    <button id="toiMoTatCa" type="button" class="th-nut" hidden>Mở tất cả</button>
+    <button id="toiGapTatCa" type="button" class="th-nut" hidden>Gập tất cả</button>
+    <span class="tb-spacer"></span>
+    <div class="tb-sort"><span class="tb-sort-lbl">Sắp xếp</span>
+      <select id="toiSapXep" title="Sắp xếp dự án">
+        <option value="tiendo-asc">Tiến độ thấp → cao</option>
+        <option value="tiendo-desc">Tiến độ cao → thấp</option>
+        <option value="uutien">Ưu tiên cao → thấp</option>
+      </select>
+    </div>
   </div>
   <div id="toiNoiDung"></div>
 </section>
@@ -248,6 +258,6 @@
   <span>Nguồn dữ liệu: Google Sheets · Tự làm mới mỗi 5 phút</span>
 </footer>
 
-<script src="xuly.js?v=6"></script>
+<script src="xuly.js?v=7"></script>
 </body>
 </html>
