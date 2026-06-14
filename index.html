@@ -18,8 +18,8 @@
 <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@3.0.0-beta.0/scroll-behaviour.min.js"></script>
 
 <!-- ===== 3 FILE CUA HE THONG ===== -->
-<link rel="stylesheet" href="giaodien.css?v=11">
-<script src="cauhinh.js?v=11"></script>
+<link rel="stylesheet" href="giaodien.css?v=12">
+<script src="cauhinh.js?v=12"></script>
 </head>
 
 <div id="toast"></div>
@@ -115,8 +115,8 @@
   <div class="th-cong-cu">
     <input type="search" id="thTim" placeholder="🔍 Tìm hạng mục, nội dung, người..." autocomplete="off">
     <select id="thNguoi"><option value="">Tất cả nhân sự</option></select>
-    <button id="thMoTatCa" type="button" class="th-nut">Mở tất cả</button>
-    <button id="thGapTatCa" type="button" class="th-nut">Gập tất cả</button>
+    <button id="thMoTatCa" type="button" class="th-nut-icon" title="Mở tất cả" aria-label="Mở tất cả">+</button>
+    <button id="thGapTatCa" type="button" class="th-nut-icon" title="Gập tất cả" aria-label="Gập tất cả">−</button>
     <label class="tb-check"><input type="checkbox" id="thAnXong"> Ẩn việc đã xong</label>
   </div>
   <div class="th-head">
@@ -138,8 +138,8 @@
       <option value="list">Dạng danh sách</option>
       <option value="cay">Dạng cây theo dự án</option>
     </select>
-    <button id="toiMoTatCa" type="button" class="th-nut" hidden>Mở tất cả</button>
-    <button id="toiGapTatCa" type="button" class="th-nut" hidden>Gập tất cả</button>
+    <button id="toiMoTatCa" type="button" class="th-nut-icon" title="Mở tất cả" aria-label="Mở tất cả" hidden>+</button>
+    <button id="toiGapTatCa" type="button" class="th-nut-icon" title="Gập tất cả" aria-label="Gập tất cả" hidden>−</button>
     <label class="tb-check"><input type="checkbox" id="toiAnXong"> Ẩn việc đã xong</label>
     <span class="tb-spacer"></span>
     <div class="tb-sort"><span class="tb-sort-lbl">Sắp xếp</span>
@@ -260,6 +260,6 @@
   <span>Nguồn dữ liệu: Google Sheets · Tự làm mới mỗi 5 phút</span>
 </footer>
 
-<script src="xuly.js?v=11"></script>
+<script src="xuly.js?v=12"></script>
 </body>
 </html>

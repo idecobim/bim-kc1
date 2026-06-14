@@ -384,10 +384,10 @@ async function thaThe(trangThaiMoi){
 
 /* ====== Menu chuột phải ====== */
 document.addEventListener('contextmenu', e=>{
-  const ttEl = e.target.closest('[data-ttpick]');
-  if(ttEl){
+  const infoUid = thePhanCong(e.target);
+  if(infoUid){
     e.preventDefault(); e.stopPropagation();
-    moMenuTrangThai(Number(ttEl.dataset.ttpick), e.clientX, e.clientY);
+    moFormSuaViec(infoUid);
     return;
   }
   const kCard = e.target.closest('.k-card');
@@ -892,7 +892,10 @@ function chipTrangThaiNho(tt){
   return '<span class="th-chip" style="color:'+col+';border-color:'+col+'">'+t+'</span>';
 }
 $('thCay').addEventListener('click', e=>{
-  const r = e.target.closest('.th-br'); if(!r) return;   /* chỉ gập/mở nhánh — tab quan sát */
+  if(_lpFired){ _lpFired=false; return; }
+  const la = e.target.closest('.th-leaf');
+  if(la && la.dataset.cbuid){ moMenuTrangThai(Number(la.dataset.cbuid), e.clientX, e.clientY); return; }
+  const r = e.target.closest('.th-br'); if(!r) return;   /* nhánh: gập/mở */
   const k = r.dataset.mo;
   if(moNhanh.has(k)) moNhanh.delete(k); else moNhanh.add(k);
   veTongHop();
@@ -1131,8 +1134,11 @@ if($('toiAnXong')){
 }
 /* Bấm ✎ / pill / vướng mắc / gập nhóm trong "Việc của tôi" */
 $('toiNoiDung').addEventListener('click', e=>{
+  if(_lpFired){ _lpFired=false; return; }   /* vừa nhấn giữ xong, bỏ qua click kèm theo */
   const vmb = e.target.closest('[data-vm]');
   if(vmb){ datVuongMac(Number(vmb.dataset.vm)); return; }
+  const suaNut = e.target.closest('[data-suatoi]');
+  if(suaNut){ moFormSuaViec(Number(suaNut.dataset.suatoi)); return; }
   const nhomRow = e.target.closest('.toi-nhom');
   if(nhomRow){
     const cls = nhomRow.dataset.nhom, def = nhomRow.dataset.modef==='1';
@@ -1140,14 +1146,15 @@ $('toiNoiDung').addEventListener('click', e=>{
     if(moNhanhToi.has(k)) moNhanhToi.delete(k); else moNhanhToi.add(k);
     veViecCuaToi(); return;
   }
-  const nut = e.target.closest('[data-suatoi]');
-  if(nut){ moFormSuaViec(Number(nut.dataset.suatoi)); return; }
   const daRow = e.target.closest('[data-mato]');
   if(daRow){ const k=daRow.dataset.mato; if(moNhanhToi.has(k))moNhanhToi.delete(k);else moNhanhToi.add(k); veViecCuaToi(); return; }
   const br = e.target.closest('[data-moto]');
   if(br){ const k=br.dataset.moto; if(moNhanhToi.has(k))moNhanhToi.delete(k);else moNhanhToi.add(k); veViecCuaToi(); return; }
+  /* click vào bất kỳ đâu trong thẻ công việc → menu cập nhật nhanh trạng thái */
+  const tv = e.target.closest('.toi-viec');
+  if(tv && tv.dataset.uid){ moMenuTrangThai(Number(tv.dataset.uid), e.clientX, e.clientY); return; }
   const la = e.target.closest('.th-leaf');
-  if(la && la.dataset.cbuid){ moFormSuaViec(Number(la.dataset.cbuid)); return; }
+  if(la && la.dataset.cbuid){ moMenuTrangThai(Number(la.dataset.cbuid), e.clientX, e.clientY); return; }
 });
 /* Báo / gỡ vướng mắc nhanh (ghi cả việc về Sheets) */
 async function datVuongMac(uid){
@@ -1208,17 +1215,17 @@ document.querySelectorAll('.view-tab').forEach(b=>{
   b.addEventListener('click', ()=>doiView(b.dataset.view));
 });
 
-/* ===== Đổi trạng thái: chuột trái (PC) / nhấn giữ (ĐT) — cho cả tab 2 & 3 ===== */
+/* ===== Trên 1 THẺ CÔNG VIỆC (cả tab 2 & 3):
+   - Chuột trái / chạm  → menu cập nhật nhanh trạng thái
+   - Chuột phải / nhấn giữ → mở thông tin (form sửa)
+   Bấm vào nút ✎ / ⚠ hoặc dòng nhóm/nhánh thì giữ hành vi riêng. ===== */
 let _ttPickUid = null, _lpTimer = null, _lpFired = false, _lastPtr = 'mouse';
 function moMenuTrangThai(uid, x, y){
   _ttPickUid = uid;
   const nv = NHIEM_VU.find(v=>v.uid===uid);
   const cur = nv ? chuanCot(nv.trangthai) : '';
   const menu = $('menuTrangThai');
-  menu.querySelectorAll('.mtt').forEach(li=>{
-    li.classList.toggle('dang-chon', li.dataset.tt===cur);
-  });
-  /* canh trong màn hình */
+  menu.querySelectorAll('.mtt').forEach(li=> li.classList.toggle('dang-chon', li.dataset.tt===cur));
   const mw = 220, mh = 180;
   const px = Math.min(x, window.innerWidth - mw);
   const py = Math.min(y, window.innerHeight - mh + window.scrollY);
@@ -1226,25 +1233,22 @@ function moMenuTrangThai(uid, x, y){
   menu.style.top = (py + window.scrollY) + 'px';
   menu.classList.add('show');
 }
+/* lấy uid của thẻ công việc tại điểm bấm (loại trừ nút/nhánh) */
+function thePhanCong(target){
+  if(target.closest('[data-suatoi],[data-vm],[data-mato],[data-moto],.th-br,.toi-nhom,.toi-da-row')) return null;
+  const row = target.closest('#toiNoiDung .toi-viec, #toiNoiDung .th-leaf, #thCay .th-leaf');
+  if(!row) return null;
+  return Number(row.dataset.uid || row.dataset.cbuid) || null;
+}
 document.addEventListener('pointerdown', e=>{
   _lastPtr = e.pointerType || 'mouse';
-  const el = e.target.closest('[data-ttpick]');
-  if(el && e.pointerType==='touch'){
+  if(e.pointerType==='touch'){
+    const uid = thePhanCong(e.target); if(!uid) return;
     _lpFired = false;
-    const uid = Number(el.dataset.ttpick), x = e.clientX, y = e.clientY;
-    _lpTimer = setTimeout(()=>{ _lpFired = true; if(navigator.vibrate) navigator.vibrate(15); moMenuTrangThai(uid, x, y); }, 480);
+    _lpTimer = setTimeout(()=>{ _lpFired = true; if(navigator.vibrate) navigator.vibrate(15); moFormSuaViec(uid); }, 480);  /* nhấn giữ = thông tin */
   }
 });
 ['pointermove','pointerup','pointercancel'].forEach(ev=>document.addEventListener(ev, ()=>{ if(_lpTimer){ clearTimeout(_lpTimer); _lpTimer=null; } }));
-document.addEventListener('click', e=>{
-  const el = e.target.closest('[data-ttpick]');
-  if(!el) return;
-  if(_lpFired){ _lpFired=false; e.preventDefault(); e.stopPropagation(); return; }  /* đã xử lý bằng nhấn giữ */
-  if(_lastPtr==='touch') return;   /* ĐT chỉ dùng nhấn giữ, bỏ qua chạm thường */
-  e.stopPropagation();
-  const r = el.getBoundingClientRect();
-  moMenuTrangThai(Number(el.dataset.ttpick), r.left, r.bottom);
-});
 document.querySelectorAll('#menuTrangThai .mtt').forEach(li=>{
   li.onclick = ()=>{ const tt = li.dataset.tt, uid = _ttPickUid; dongCtx(); if(uid!=null) capNhatTrangThaiViec(uid, tt); };
 });

@@ -354,3 +354,8 @@
     /* Kanban cuộn ngang mượt */
     .kanban{gap:10px}
   }
+
+  /* ----- Nút biểu tượng Mở/Gập tất cả ----- */
+  .th-nut-icon{width:32px;height:32px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--ink);background:var(--white);color:var(--ink);font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:20px;line-height:1;border-radius:3px;cursor:pointer;padding:0}
+  .th-nut-icon:hover{background:var(--ink);color:var(--white)}
+  .th-nut-icon[hidden]{display:none}
