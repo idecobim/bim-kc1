@@ -406,3 +406,7 @@
   #nhapO{width:100%;box-sizing:border-box;font-family:'Be Vietnam Pro',sans-serif;font-size:14px;line-height:1.5;border:1px solid var(--line);border-radius:6px;padding:11px 12px;background:var(--white);color:var(--ink);resize:vertical;min-height:84px}
   #nhapO:focus{outline:none;border-color:var(--orange)}
   .nhap-nut{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+
+  /* ----- Nhãn Hỗ trợ ----- */
+  .badge-ht{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;color:#fff;background:var(--concrete);padding:1px 6px;border-radius:8px;margin-right:6px;vertical-align:middle;white-space:nowrap}
+  .th-vm + .badge-ht,.th-tn + .badge-ht{margin-left:0}

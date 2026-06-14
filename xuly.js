@@ -59,6 +59,15 @@ function hienNguoi(s){
   const ho = parts.slice(1);
   return '<b>'+thoatHTML(parts[0])+'</b> <span class="ng-ho" title="Hỗ trợ: '+thoatHTML(ho.join(', '))+'">+'+ho.length+' HT</span>';
 }
+/* Vai trò của 1 người trong việc: 'chinh' (đầu danh sách), 'ho' (sau), hoặc null */
+function vaiTroNguoi(v, nguoi){
+  if(!nguoi) return null;
+  const parts = (v.nguoi||'').split(',').map(x=>x.trim()).filter(Boolean);
+  if(!parts.length) return null;
+  if(parts[0]===nguoi) return 'chinh';
+  return parts.includes(nguoi) ? 'ho' : null;
+}
+function nguoiChinhCua(v){ return (v.nguoi||'').split(',').map(x=>x.trim()).filter(Boolean)[0] || ''; }
 function tinhTienDo(mada){
   const viec = NHIEM_VU.filter(v => v.mada === mada && !dangNgung(v));
   if(viec.length === 0) return 0;
@@ -896,8 +905,9 @@ function veTongHop(){
     const ghichu = (v.nhiemvu && v.nhiemvu!==ten) ? '<span class="th-note">'+thoatHTML(v.nhiemvu)+'</span>' : '';
     const vm = v.vuongmac ? '<span class="th-vm" title="'+thoatHTML(v.vuongmac)+'">⚠</span>' : '';
     const tn = dangNgung(v) ? '<span class="th-tn" title="Tạm ngưng: '+thoatHTML(v.tamngung)+'">⏸</span>' : '';
+    const htCo = (fNguoi && vaiTroNguoi(v, fNguoi)==='ho') ? '<span class="badge-ht" title="'+thoatHTML(fNguoi)+' là người hỗ trợ (chính: '+thoatHTML(nguoiChinhCua(v))+')">🤝 HT</span>' : '';
     return '<div class="th-row th-leaf'+(v.vuongmac?' co-vm':'')+(dangNgung(v)?' co-tn':'')+'" data-cbuid="'+v.uid+'">'
-      + '<span class="th-ten" style="padding-left:'+pad+'px"><span class="th-ico"></span>'+vm+tn+thoatHTML(ten)+ghichu+'</span>'
+      + '<span class="th-ten" style="padding-left:'+pad+'px"><span class="th-ico"></span>'+vm+tn+htCo+thoatHTML(ten)+ghichu+'</span>'
       + '<span class="th-c-tt" data-ttpick="'+v.uid+'" title="Bấm để đổi trạng thái">'+chipTrangThaiNho(v.trangthai)+'</span>'
       + '<span class="th-c-ng">'+hienNguoi(v.nguoi)+'</span>'
       + '<span class="th-c-pct"><span class="th-bar"><span class="th-fill" style="width:'+p+'%;background:'+mauPct(p)+'"></span></span><span class="th-pct" style="color:'+mauPct(p)+'">'+p+'%</span></span></div>';
@@ -1164,12 +1174,14 @@ function dongViecToi(v){
   else if(c==='Đang thực hiện / Chỉnh sửa'){ pillTxt='Đang'; pillCol='var(--amber)'; }
   const vm = v.vuongmac ? '<div class="toi-vm">⚠ '+thoatHTML(v.vuongmac)+'</div>' : '';
   const dongNghiep = (v.nguoi||'').split(',').map(s=>s.trim()).filter(Boolean).filter(n=>n!==nguoiCuaToi);
+  const vaiTro = vaiTroNguoi(v, nguoiCuaToi);
+  const badgeHT = vaiTro==='ho' ? '<span class="badge-ht" title="Bạn là người hỗ trợ. Phụ trách chính: '+thoatHTML(nguoiChinhCua(v))+'">🤝 Hỗ trợ</span>' : '';
   const cung = dongNghiep.length ? '<span class="toi-cung" title="Cùng làm việc này">👥 '+thoatHTML(dongNghiep.join(', '))+'</span>' : '';
   const tn = dangNgung(v) ? '<div class="toi-tn">⏸ Tạm ngưng'+(String(v.tamngung).trim()&&String(v.tamngung).trim()!=='1'?': '+thoatHTML(v.tamngung):'')+'</div>' : '';
   const hanTxt = (v.han && v.han!=='-') ? '<span class="toi-han">⏳ '+thoatHTML(v.han)+'</span>' : '';
   return '<div class="toi-viec'+(v.vuongmac?' co-vm':'')+(dangNgung(v)?' co-tn':'')+'" data-uid="'+v.uid+'">'
     + '<div class="toi-noidung">'+(duong?'<span class="toi-path">'+duong+'</span>':'')
-      + (laMoi(v)?'<span class="badge-moi">• Mới</span>':'') + '<span class="toi-tenviec">'+thoatHTML(tenViec)+'</span>'+hanTxt+cung+vm+tn+'</div>'
+      + (laMoi(v)?'<span class="badge-moi">• Mới</span>':'') + badgeHT + '<span class="toi-tenviec">'+thoatHTML(tenViec)+'</span>'+hanTxt+cung+vm+tn+'</div>'
     + '<button class="toi-pill" type="button" data-ttpick="'+v.uid+'" style="color:'+pillCol+';border-color:'+pillCol+'" title="Bấm để đổi trạng thái">'+pillTxt+'</button>'
     + '<button class="toi-vm-nut'+(v.vuongmac?' on':'')+'" type="button" data-vm="'+v.uid+'" title="Báo/gỡ vướng mắc">⚠</button>'
     + '<button class="toi-tn-nut'+(dangNgung(v)?' on':'')+'" type="button" data-tn="'+v.uid+'" title="Tạm ngưng / bỏ tạm ngưng">⏸</button></div>';
@@ -1180,8 +1192,9 @@ function dongLaToi(ten, v, depth){
   const ghichu = (v.nhiemvu && v.nhiemvu!==ten) ? '<span class="th-note">'+thoatHTML(v.nhiemvu)+'</span>' : '';
   const vm = v.vuongmac ? '<span class="th-vm" title="'+thoatHTML(v.vuongmac)+'">⚠</span>' : '';
   const tn = dangNgung(v) ? '<span class="th-tn" title="Tạm ngưng: '+thoatHTML(v.tamngung)+'">⏸</span>' : '';
+  const ht = vaiTroNguoi(v, nguoiCuaToi)==='ho' ? '<span class="badge-ht" title="Hỗ trợ. Chính: '+thoatHTML(nguoiChinhCua(v))+'">🤝</span>' : '';
   return '<div class="th-row th-leaf'+(dangNgung(v)?' co-tn':'')+'" data-cbuid="'+v.uid+'">'
-    + '<span class="th-ten" style="padding-left:'+(10+depth*18)+'px"><span class="th-ico"></span>'+(laMoi(v)?'<span class="badge-moi">• Mới</span>':'')+vm+tn+thoatHTML(ten)+ghichu+'</span>'
+    + '<span class="th-ten" style="padding-left:'+(10+depth*18)+'px"><span class="th-ico"></span>'+(laMoi(v)?'<span class="badge-moi">• Mới</span>':'')+vm+tn+ht+thoatHTML(ten)+ghichu+'</span>'
     + '<span class="th-c-tt" data-ttpick="'+v.uid+'" title="Bấm để đổi trạng thái">'+chipTrangThaiNho(v.trangthai)+'</span>'
     + '<span class="th-c-ng">'+(v.han&&v.han!=='-'?'⏳ '+thoatHTML(v.han):'')+'</span>'
     + '<span class="th-c-pct"><span class="th-bar"><span class="th-fill" style="width:'+p+'%;background:'+mauPct(p)+'"></span></span><span class="th-pct" style="color:'+mauPct(p)+'">'+p+'%</span></span></div>';
