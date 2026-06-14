@@ -820,7 +820,7 @@ function vietKhop(v, fNguoi, fText){
 function veTongHop(){
   const fNguoi = $('thNguoi').value;
   const fText = boDau($('thTim').value);
-  window._anXongCay = $('thAnXong') && $('thAnXong').checked;
+  window._anXongCay = $('thAnXong') && $('thAnXong').getAttribute('aria-pressed')==='true';
   const root = dungCay();
   if(!veTongHop._seeded && root.con.size){
     root.con.forEach(c=>moNhanh.add(c.key));   /* mở sẵn các dự án cấp 1 */
@@ -843,8 +843,13 @@ function veTongHop(){
     const p = pctCay(c);
     const pad = 10 + depth*18;
     const soViec = viecCuaNhanh(c).length;
+    let tenHien = c.ten;
+    if(depth===0){
+      const da = DU_AN.find(d=>d.ma===c.ten);
+      if(da && da.ten) tenHien = da.ten + ' (' + c.ten + ')';
+    }
     return '<div class="th-row th-br'+(depth===0?' th-lv0':'')+'" data-mo="'+thoatHTML(c.key)+'">'
-      + '<span class="th-ten" style="padding-left:'+pad+'px;font-weight:600"><span class="th-ico">▸</span>'+thoatHTML(c.ten)+'</span>'
+      + '<span class="th-ten" style="padding-left:'+pad+'px;font-weight:600"><span class="th-ico">▸</span>'+thoatHTML(tenHien)+'</span>'
       + '<span class="th-c-tt"></span>'
       + '<span class="th-c-ng th-dem">'+soViec+' việc</span>'
       + '<span class="th-c-pct"><span class="th-bar"><span class="th-fill" style="width:'+p+'%;background:'+mauPct(p)+'"></span></span><span class="th-pct" style="color:'+mauPct(p)+'">'+p+'%</span></span></div>';
@@ -894,7 +899,7 @@ function chipTrangThaiNho(tt){
 $('thCay').addEventListener('click', e=>{
   if(_lpFired){ _lpFired=false; return; }
   const la = e.target.closest('.th-leaf');
-  if(la && la.dataset.cbuid){ moMenuTrangThai(Number(la.dataset.cbuid), e.clientX, e.clientY); return; }
+  if(la && la.dataset.cbuid){ e.stopPropagation(); moMenuTrangThai(Number(la.dataset.cbuid), e.clientX, e.clientY); return; }
   const r = e.target.closest('.th-br'); if(!r) return;   /* nhánh: gập/mở */
   const k = r.dataset.mo;
   if(moNhanh.has(k)) moNhanh.delete(k); else moNhanh.add(k);
@@ -908,9 +913,12 @@ $('thMoTatCa').addEventListener('click', ()=>{
 });
 $('thGapTatCa').addEventListener('click', ()=>{ moNhanh.clear(); veTongHop(); });
 if($('thAnXong')){
-  try{ $('thAnXong').checked = localStorage.getItem('anXongCay')==='1'; }catch(e){}
-  $('thAnXong').addEventListener('change', ()=>{
-    try{ localStorage.setItem('anXongCay', $('thAnXong').checked?'1':'0'); }catch(e){}
+  try{ const on = localStorage.getItem('anXongCay')==='1'; $('thAnXong').setAttribute('aria-pressed', on?'true':'false'); $('thAnXong').classList.toggle('on', on); }catch(e){}
+  $('thAnXong').addEventListener('click', ()=>{
+    const on = $('thAnXong').getAttribute('aria-pressed')!=='true';
+    $('thAnXong').setAttribute('aria-pressed', on?'true':'false');
+    $('thAnXong').classList.toggle('on', on);
+    try{ localStorage.setItem('anXongCay', on?'1':'0'); }catch(e){}
     veTongHop();
   });
 }
@@ -950,8 +958,8 @@ function veViecCuaToi(){
     selT.dataset.loaded = '1';
     if(nguoiCuaToi) selT.value = nguoiCuaToi;
   }
-  if($('toiCheDo')) $('toiCheDo').value = cheDoToi;
-  const anXongToi = $('toiAnXong') && $('toiAnXong').checked;
+  if($('toiCheDo')){ $('toiCheDo').dataset.mode = cheDoToi; $('toiCheDo').innerHTML = (cheDoToi==='cay' ? '🌳 Cây dự án' : '☰ Danh sách'); }
+  const anXongToi = $('toiAnXong') && $('toiAnXong').getAttribute('aria-pressed')==='true';
   if($('toiSapXep')) $('toiSapXep').value = sapXepToi;
   /* nút mở/gập chỉ hiện khi xem dạng cây */
   if($('toiMoTatCa')) $('toiMoTatCa').hidden = (cheDoToi!=='cay');
@@ -1108,8 +1116,8 @@ $('toiNguoi').addEventListener('change', e=>{
   try{ localStorage.setItem('nguoiCuaToi', nguoiCuaToi); }catch(x){}
   veViecCuaToi();
 });
-if($('toiCheDo')) $('toiCheDo').addEventListener('change', e=>{
-  cheDoToi = e.target.value;
+if($('toiCheDo')) $('toiCheDo').addEventListener('click', ()=>{
+  cheDoToi = (cheDoToi==='cay' ? 'list' : 'cay');
   try{ localStorage.setItem('cheDoToi', cheDoToi); }catch(x){}
   veViecCuaToi();
 });
@@ -1126,9 +1134,12 @@ if($('toiMoTatCa')) $('toiMoTatCa').addEventListener('click', ()=>{
 });
 if($('toiGapTatCa')) $('toiGapTatCa').addEventListener('click', ()=>{ moNhanhToi.clear(); veViecCuaToi(); });
 if($('toiAnXong')){
-  try{ $('toiAnXong').checked = localStorage.getItem('anXongToi')==='1'; }catch(e){}
-  $('toiAnXong').addEventListener('change', ()=>{
-    try{ localStorage.setItem('anXongToi', $('toiAnXong').checked?'1':'0'); }catch(e){}
+  try{ const on = localStorage.getItem('anXongToi')==='1'; $('toiAnXong').setAttribute('aria-pressed', on?'true':'false'); $('toiAnXong').classList.toggle('on', on); }catch(e){}
+  $('toiAnXong').addEventListener('click', ()=>{
+    const on = $('toiAnXong').getAttribute('aria-pressed')!=='true';
+    $('toiAnXong').setAttribute('aria-pressed', on?'true':'false');
+    $('toiAnXong').classList.toggle('on', on);
+    try{ localStorage.setItem('anXongToi', on?'1':'0'); }catch(e){}
     veViecCuaToi();
   });
 }
@@ -1152,9 +1163,9 @@ $('toiNoiDung').addEventListener('click', e=>{
   if(br){ const k=br.dataset.moto; if(moNhanhToi.has(k))moNhanhToi.delete(k);else moNhanhToi.add(k); veViecCuaToi(); return; }
   /* click vào bất kỳ đâu trong thẻ công việc → menu cập nhật nhanh trạng thái */
   const tv = e.target.closest('.toi-viec');
-  if(tv && tv.dataset.uid){ moMenuTrangThai(Number(tv.dataset.uid), e.clientX, e.clientY); return; }
+  if(tv && tv.dataset.uid){ e.stopPropagation(); moMenuTrangThai(Number(tv.dataset.uid), e.clientX, e.clientY); return; }
   const la = e.target.closest('.th-leaf');
-  if(la && la.dataset.cbuid){ moMenuTrangThai(Number(la.dataset.cbuid), e.clientX, e.clientY); return; }
+  if(la && la.dataset.cbuid){ e.stopPropagation(); moMenuTrangThai(Number(la.dataset.cbuid), e.clientX, e.clientY); return; }
 });
 /* Báo / gỡ vướng mắc nhanh (ghi cả việc về Sheets) */
 async function datVuongMac(uid){

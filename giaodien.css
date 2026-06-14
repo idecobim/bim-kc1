@@ -359,3 +359,9 @@
   .th-nut-icon{width:32px;height:32px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--ink);background:var(--white);color:var(--ink);font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:20px;line-height:1;border-radius:3px;cursor:pointer;padding:0}
   .th-nut-icon:hover{background:var(--ink);color:var(--white)}
   .th-nut-icon[hidden]{display:none}
+
+  /* ----- Nút bật/tắt (chế độ xem, ẩn việc xong) ----- */
+  .th-toggle{flex-shrink:0;border:1px solid var(--ink);background:var(--white);color:var(--ink);font-family:'Be Vietnam Pro',sans-serif;font-size:13px;padding:7px 12px;border-radius:3px;cursor:pointer;white-space:nowrap}
+  .th-toggle:hover{background:var(--paper)}
+  .th-toggle.on{background:var(--ink);color:var(--white);border-color:var(--ink)}
+  .th-toggle[aria-pressed="true"]{background:var(--orange);color:#fff;border-color:var(--orange)}

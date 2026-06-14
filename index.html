@@ -18,8 +18,8 @@
 <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@3.0.0-beta.0/scroll-behaviour.min.js"></script>
 
 <!-- ===== 3 FILE CUA HE THONG ===== -->
-<link rel="stylesheet" href="giaodien.css?v=12">
-<script src="cauhinh.js?v=12"></script>
+<link rel="stylesheet" href="giaodien.css?v=13">
+<script src="cauhinh.js?v=13"></script>
 </head>
 
 <div id="toast"></div>
@@ -117,7 +117,7 @@
     <select id="thNguoi"><option value="">Tất cả nhân sự</option></select>
     <button id="thMoTatCa" type="button" class="th-nut-icon" title="Mở tất cả" aria-label="Mở tất cả">+</button>
     <button id="thGapTatCa" type="button" class="th-nut-icon" title="Gập tất cả" aria-label="Gập tất cả">−</button>
-    <label class="tb-check"><input type="checkbox" id="thAnXong"> Ẩn việc đã xong</label>
+    <button id="thAnXong" type="button" class="th-toggle" aria-pressed="false">Ẩn việc đã xong</button>
   </div>
   <div class="th-head">
     <span class="th-ten">Hạng mục / công việc</span>
@@ -134,13 +134,10 @@
     <label class="toi-lbl">Tôi là:</label>
     <select id="toiNguoi"><option value="">— Chọn tên —</option></select>
     <select id="toiLocDA"><option value="">Tất cả dự án</option></select>
-    <select id="toiCheDo" title="Cách hiển thị">
-      <option value="list">Dạng danh sách</option>
-      <option value="cay">Dạng cây theo dự án</option>
-    </select>
+    <button id="toiCheDo" type="button" class="th-toggle" data-mode="list" title="Chuyển dạng hiển thị">☰ Danh sách</button>
     <button id="toiMoTatCa" type="button" class="th-nut-icon" title="Mở tất cả" aria-label="Mở tất cả" hidden>+</button>
     <button id="toiGapTatCa" type="button" class="th-nut-icon" title="Gập tất cả" aria-label="Gập tất cả" hidden>−</button>
-    <label class="tb-check"><input type="checkbox" id="toiAnXong"> Ẩn việc đã xong</label>
+    <button id="toiAnXong" type="button" class="th-toggle" aria-pressed="false">Ẩn việc đã xong</button>
     <span class="tb-spacer"></span>
     <div class="tb-sort"><span class="tb-sort-lbl">Sắp xếp</span>
       <select id="toiSapXep" title="Sắp xếp dự án">
@@ -260,6 +257,6 @@
   <span>Nguồn dữ liệu: Google Sheets · Tự làm mới mỗi 5 phút</span>
 </footer>
 
-<script src="xuly.js?v=12"></script>
+<script src="xuly.js?v=13"></script>
 </body>
 </html>
