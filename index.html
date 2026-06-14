@@ -18,8 +18,8 @@
 <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@3.0.0-beta.0/scroll-behaviour.min.js"></script>
 
 <!-- ===== 3 FILE CUA HE THONG ===== -->
-<link rel="stylesheet" href="giaodien.css?v=16">
-<script src="cauhinh.js?v=16"></script>
+<link rel="stylesheet" href="giaodien.css?v=17">
+<script src="cauhinh.js?v=17"></script>
 </head>
 
 <div id="toast"></div>
@@ -235,7 +235,8 @@
       <input type="hidden" id="cv-mada">
       <div class="f-group f-full"><label>Phân cấp (ngăn bằng dấu /)</label><input id="cv-phancap" placeholder="VD: PHẦN CẦU / Cầu vượt nhánh B / Kết cấu phần trên / Mô hình" autocomplete="off"></div>
       <div class="f-group f-full"><label>Nội dung công việc (không bắt buộc)</label><input id="cv-nhiemvu" placeholder="Ghi chú thêm nếu cần — có thể để trống" autocomplete="off"></div>
-      <div class="f-group f-full"><label>Người thực hiện *</label><div class="ms-wrapper" id="ms-nguoi-container"></div></div>
+      <div class="f-group"><label>Người chính *</label><select id="cv-nguoi-chinh"><option value="">— Chọn người chính —</option></select></div>
+      <div class="f-group f-full"><label>Hỗ trợ (tùy chọn — có thể chọn nhiều người cùng làm)</label><div class="ms-wrapper" id="ms-nguoiho-container"></div></div>
       <div class="f-group"><label>Ưu tiên</label>
         <select id="cv-uutien"><option>Thấp</option><option selected>Trung bình</option><option>Cao</option></select></div>
       <div class="f-group"><label>Hạn nộp <button type="button" class="nut-mo-han" data-han="cv-han">🔒 Đổi hạn (leader)</button></label><input id="cv-han" placeholder="dd/mm/yyyy" autocomplete="off"></div>
@@ -258,6 +259,20 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modalNhap" hidden>
+  <div class="modal modal-nhap" role="dialog" aria-labelledby="nhapTitle">
+    <div class="modal-head"><h2 id="nhapTitle">Nhập</h2><button class="modal-x" type="button" id="nhapX">✕</button></div>
+    <div style="padding:4px">
+      <p id="nhapNhan" class="nhap-nhan"></p>
+      <textarea id="nhapO" rows="3" placeholder="Nhập nội dung..."></textarea>
+      <div class="nhap-nut">
+        <button type="button" class="btn-ghost" id="nhapHuy">Hủy</button>
+        <button type="button" class="btn-primary" id="nhapLuu">Lưu</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modalBaoCao" hidden>
   <div class="modal" role="dialog" aria-labelledby="bcTitle">
     <div class="modal-head"><h2 id="bcTitle">📋 Báo cáo nhanh</h2><button class="modal-x" type="button" data-dong>✕</button></div>
@@ -276,6 +291,6 @@
   <span>Nguồn dữ liệu: Google Sheets · Tự làm mới mỗi 5 phút</span>
 </footer>
 
-<script src="xuly.js?v=16"></script>
+<script src="xuly.js?v=17"></script>
 </body>
 </html>

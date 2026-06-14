@@ -342,7 +342,8 @@
 
     /* Việc của tôi: nút to dễ chạm */
     .toi-pill{min-width:54px;padding:8px 8px;font-size:13px}
-    .toi-vm-nut,.toi-sua{padding:9px 11px;font-size:15px}
+    .toi-vm-nut,.toi-tn-nut{width:40px;height:40px;font-size:17px}
+    .toi-pill{height:40px}
     .toi-viec{gap:8px;padding:11px 12px}
     .toi-path{font-size:10px}
     .toi-tenviec{font-size:13.5px}
@@ -386,3 +387,22 @@
 
   /* ----- Dòng chú thích (legend) ----- */
   .chu-thich{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--concrete);padding:6px 14px;border-bottom:1px solid var(--line);background:var(--paper);line-height:1.5}
+
+  /* ----- #5 nút chuyển dạng: cố định bề rộng, không nhảy ----- */
+  #toiCheDo{min-width:128px;text-align:left}
+
+  /* ----- Đồng bộ nút thao tác trên thẻ việc (pill / ⚠ / ⏸) ----- */
+  .toi-viec{align-items:center}
+  .toi-pill{height:34px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center}
+  .toi-vm-nut,.toi-tn-nut{width:34px;height:34px;padding:0;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;font-size:15px}
+
+  /* ----- Tag hỗ trợ / cùng làm ----- */
+  .ng-ho{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--concrete);border:1px solid var(--line);border-radius:8px;padding:0 5px;margin-left:4px;white-space:nowrap}
+  .toi-cung{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--concrete);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:1px 7px;margin-left:6px;vertical-align:middle}
+
+  /* ----- Hộp thoại nhập lý do (vướng mắc / tạm ngưng) ----- */
+  .modal-nhap{max-width:460px}
+  .nhap-nhan{font-size:13px;color:var(--concrete);line-height:1.5;margin:2px 0 10px}
+  #nhapO{width:100%;box-sizing:border-box;font-family:'Be Vietnam Pro',sans-serif;font-size:14px;line-height:1.5;border:1px solid var(--line);border-radius:6px;padding:11px 12px;background:var(--white);color:var(--ink);resize:vertical;min-height:84px}
+  #nhapO:focus{outline:none;border-color:var(--orange)}
+  .nhap-nut{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
