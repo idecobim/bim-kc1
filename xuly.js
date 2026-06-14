@@ -914,6 +914,18 @@ function veTongHop(){
     root.con.forEach(c=>moNhanh.add(c.key));   /* mở sẵn các dự án cấp 1 */
     veTongHop._seeded = true;
   }
+  /* Khi bộ lọc VỪA thay đổi: tự mở các nhánh có kết quả (chỉ 1 lần), sau đó cho đóng/mở tay */
+  const chuKyLoc = fNguoi + '\u0001' + fText;
+  if(veTongHop._locTruoc !== chuKyLoc){
+    veTongHop._locTruoc = chuKyLoc;
+    if(fNguoi || fText){
+      (function moKhop(node){
+        node.con.forEach(c=>{
+          if(nhanhKhop(c, fNguoi, fText)){ moNhanh.add(c.key); moKhop(c); }
+        });
+      })(root);
+    }
+  }
   const out = [];
 
   function dongLa(ten, v, depth){
@@ -956,8 +968,7 @@ function veTongHop(){
       }
       /* Nhánh: có con, hoặc nhiều việc cùng cấp */
       out.push(dongNhanh(c, depth));
-      const dangLoc = !!(fNguoi || fText);
-      if(moNhanh.has(c.key) || dangLoc){
+      if(moNhanh.has(c.key)){
         walk(c, depth+1);                                   /* nhánh con */
         c.viec.slice().sort((a,b)=>soSanhTuNhien(a.nhiemvu,b.nhiemvu)).forEach(v=>{   /* việc gắn trực tiếp */
           if(vietKhop(v, fNguoi, fText))
@@ -970,7 +981,7 @@ function veTongHop(){
   $('thCay').innerHTML = out.join('') || '<div class="th-empty">Chưa có công việc nào khớp.</div>';
   $('thCay').querySelectorAll('.th-br').forEach(r=>{
     const ico = r.querySelector('.th-ico');
-    if(ico) ico.textContent = (moNhanh.has(r.dataset.mo) || !!($('thNguoi').value || $('thTim').value)) ? '▾' : '▸';
+    if(ico) ico.textContent = moNhanh.has(r.dataset.mo) ? '▾' : '▸';
   });
   if($('thNguoi').dataset.loaded !== '1'){
     const ds = [...new Set(NHIEM_VU.flatMap(v=>v.nguoi.split(',').map(s=>s.trim())).filter(Boolean))].sort();
