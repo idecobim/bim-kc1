@@ -18,8 +18,8 @@
 <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@3.0.0-beta.0/scroll-behaviour.min.js"></script>
 
 <!-- ===== 3 FILE CUA HE THONG ===== -->
-<link rel="stylesheet" href="giaodien.css?v=14">
-<script src="cauhinh.js?v=14"></script>
+<link rel="stylesheet" href="giaodien.css?v=16">
+<script src="cauhinh.js?v=16"></script>
 </head>
 
 <div id="toast"></div>
@@ -118,7 +118,10 @@
     <button id="thMoTatCa" type="button" class="th-nut-icon" title="Mở tất cả" aria-label="Mở tất cả">+</button>
     <button id="thGapTatCa" type="button" class="th-nut-icon" title="Gập tất cả" aria-label="Gập tất cả">−</button>
     <button id="thAnXong" type="button" class="th-toggle" aria-pressed="false">Ẩn việc đã xong</button>
+    <span class="tb-spacer"></span>
+    <button id="thBaoCao" type="button" class="th-toggle" title="Tạo báo cáo phòng để copy">📋 Báo cáo</button>
   </div>
+  <div class="chu-thich">Bấm trái vào việc: đổi trạng thái · Bấm phải / nhấn giữ: xem chi tiết · ⚠ vướng mắc · ⏸ tạm ngưng (không tính %)</div>
   <div class="th-head">
     <span class="th-ten">Hạng mục / công việc</span>
     <span class="th-c-tt">Trạng thái</span>
@@ -146,7 +149,9 @@
         <option value="uutien">Ưu tiên cao → thấp</option>
       </select>
     </div>
+    <button id="toiBaoCao" type="button" class="th-toggle" title="Tạo báo cáo để copy">📋 Báo cáo</button>
   </div>
+  <div class="chu-thich">Bấm trái: đổi trạng thái · Bấm phải / nhấn giữ: xem chi tiết · ⚠ vướng mắc · ⏸ tạm ngưng · 🔴 trễ hạn · • mới</div>
   <div id="toiNoiDung"></div>
 </section>
 
@@ -243,6 +248,7 @@
         </select></div>
       <div class="f-group f-full"><label>Ghi chú / Cập nhật</label><input id="cv-ghichu" placeholder="Cập nhật tình hình..." autocomplete="off"></div>
       <div class="f-group f-full"><label>⚠ Vướng mắc (để trống nếu không có)</label><input id="cv-vuongmac" placeholder="VD: Chờ số liệu khảo sát từ tổ Trắc địa..." autocomplete="off"></div>
+      <div class="f-group f-full"><label>⏸ Tạm ngưng (ghi lý do để đánh dấu; việc này sẽ KHÔNG tính vào % trung bình)</label><input id="cv-tamngung" placeholder="VD: Dự án hoãn đến Q3; chờ phê duyệt chủ trương..." autocomplete="off"></div>
       <div class="f-group f-full"><label>Mã xác nhận của phòng *</label><input id="cv-matkhau" type="password" autocomplete="new-password"><span class="f-hint">Nhập 1 lần, hệ thống nhớ trong phiên làm việc (tự xóa sau 30 phút không dùng hoặc khi tải lại trang).</span></div>
     </div>
     <div class="modal-foot">
@@ -252,11 +258,24 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modalBaoCao" hidden>
+  <div class="modal" role="dialog" aria-labelledby="bcTitle">
+    <div class="modal-head"><h2 id="bcTitle">📋 Báo cáo nhanh</h2><button class="modal-x" type="button" data-dong>✕</button></div>
+    <div style="padding:0 4px">
+      <textarea id="bcNoiDung" readonly style="width:100%;min-height:300px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.55;border:1px solid var(--line);border-radius:4px;padding:12px;background:var(--paper);color:var(--ink);white-space:pre-wrap;overflow:auto"></textarea>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button id="bcCopy" type="button" class="btn-primary">📋 Sao chép</button>
+        <button type="button" class="btn-ghost" data-dong>Đóng</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <footer>
   <span id="footDonVi"></span>
   <span>Nguồn dữ liệu: Google Sheets · Tự làm mới mỗi 5 phút</span>
 </footer>
 
-<script src="xuly.js?v=14"></script>
+<script src="xuly.js?v=16"></script>
 </body>
 </html>

@@ -371,3 +371,18 @@
   .nut-mo-han:hover{border-color:var(--ink);color:var(--ink)}
   .nut-mo-han.mo{border-color:var(--green);color:var(--green);background:rgba(22,128,61,.08)}
   input.han-khoa{background:repeating-linear-gradient(45deg,var(--paper),var(--paper) 6px,#0000 6px,#0000 12px);color:var(--concrete);cursor:not-allowed;border-style:dashed}
+
+  /* ----- Tạm ngưng ----- */
+  .toi-tn-nut{flex-shrink:0;border:1px solid var(--line);background:var(--white);color:var(--concrete);font-size:14px;line-height:1;padding:7px 9px;border-radius:2px;cursor:pointer}
+  .toi-tn-nut.on{border-color:var(--ink);color:var(--ink);background:var(--paper)}
+  .toi-tn-nut:hover{border-color:var(--ink);color:var(--ink)}
+  .toi-tn{display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--concrete);margin-top:3px}
+  .toi-viec.co-tn{opacity:.62}
+  .toi-viec.co-tn .toi-pill{opacity:.8}
+  .toi-nhom.ngung{background:var(--paper);color:var(--concrete)}
+  .th-tn{color:var(--concrete);margin-right:4px;cursor:help}
+  .th-leaf.co-tn{opacity:.6}
+  .th-leaf.co-tn .th-ten{font-style:italic}
+
+  /* ----- Dòng chú thích (legend) ----- */
+  .chu-thich{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--concrete);padding:6px 14px;border-bottom:1px solid var(--line);background:var(--paper);line-height:1.5}
