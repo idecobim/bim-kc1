@@ -14,6 +14,11 @@ const LINK_APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbyUcTHBeIsUGGi
 const TEN_DON_VI = "Phòng BIM — KC1";
 const TRUONG_NHOM = "Phạm Anh Khoa";   /* Leader KC1 */
 
+/* Mã riêng để CHỈNH DEADLINE (chỉ leader biết). Hãy đổi thành mã của bạn.
+   Lưu ý: đây là khóa ở giao diện — đủ để nhân sự bình thường không sửa hạn,
+   nhưng người rành kỹ thuật vẫn có thể xem mã trong mã nguồn. */
+const MA_LEADER = "KC1-LEADER";
+
 /* Danh sách nhân sự (dùng cho ô chọn người ở form). Thêm tên vào giữa 2 dấu " */
 const DANH_SACH_NHAN_SU = [
   "Phạm Anh Khoa", "Huỳnh Minh Đức", "Hồ Công Bảo",

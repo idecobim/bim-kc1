@@ -365,3 +365,9 @@
   .th-toggle:hover{background:var(--paper)}
   .th-toggle.on{background:var(--ink);color:var(--white);border-color:var(--ink)}
   .th-toggle[aria-pressed="true"]{background:var(--orange);color:#fff;border-color:var(--orange)}
+
+  /* ----- Khóa chỉnh deadline (chỉ leader) ----- */
+  .nut-mo-han{margin-left:8px;font-family:'Be Vietnam Pro',sans-serif;font-size:11px;font-weight:500;padding:2px 8px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--concrete);cursor:pointer;vertical-align:middle}
+  .nut-mo-han:hover{border-color:var(--ink);color:var(--ink)}
+  .nut-mo-han.mo{border-color:var(--green);color:var(--green);background:rgba(22,128,61,.08)}
+  input.han-khoa{background:repeating-linear-gradient(45deg,var(--paper),var(--paper) 6px,#0000 6px,#0000 12px);color:var(--concrete);cursor:not-allowed;border-style:dashed}

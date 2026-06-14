@@ -78,7 +78,7 @@ function khoaCuon(){ document.body.classList.add('khoa-cuon'); }
 function moCuonNeuHetModal(){
   if(!document.querySelector('.modal-overlay:not([hidden])')) document.body.classList.remove('khoa-cuon');
 }
-function moOverlay(id){ dongCtx(); $(id).hidden = false; khoaCuon(); }
+function moOverlay(id){ dongCtx(); $(id).hidden = false; khoaCuon(); if(typeof khoaHanForm==='function') khoaHanForm(); }
 function dongCtx(){ document.querySelectorAll('.context-menu').forEach(m=>m.classList.remove('show')); }
 
 /* ====== Chuẩn hóa dữ liệu ====== */
@@ -725,6 +725,40 @@ try{
   flatpickr('#da-hannop', fpConfig);
   flatpickr('#cv-han', fpConfig);
 }catch(e){ /* thiếu CDN thì gõ tay dd/mm/yyyy vẫn dùng được */ }
+
+/* ===== Khóa chỉnh DEADLINE — chỉ leader (khóa ở giao diện) ===== */
+let leaderMoKhoa = false, _henXoaLeader = null;
+function chamLeader(){
+  if(!leaderMoKhoa) return;
+  if(_henXoaLeader) clearTimeout(_henXoaLeader);
+  _henXoaLeader = setTimeout(()=>{ leaderMoKhoa = false; khoaHanForm(); }, 30*60*1000);  /* 30' không hoạt động */
+}
+['pointerdown','keydown'].forEach(ev=>document.addEventListener(ev, chamLeader, {passive:true}));
+function khoaHanForm(){
+  ['da-hannop','cv-han'].forEach(id=>{
+    const inp = document.getElementById(id); if(!inp) return;
+    const fp = inp._flatpickr;
+    if(fp) fp.set('clickOpens', leaderMoKhoa);
+    inp.readOnly = !leaderMoKhoa;
+    inp.classList.toggle('han-khoa', !leaderMoKhoa);
+  });
+  document.querySelectorAll('.nut-mo-han').forEach(b=>{
+    b.textContent = leaderMoKhoa ? '🔓 Hạn đang mở — bấm để khóa' : '🔒 Đổi hạn (leader)';
+    b.classList.toggle('mo', leaderMoKhoa);
+  });
+}
+document.querySelectorAll('.nut-mo-han').forEach(b=>b.addEventListener('click', ()=>{
+  if(leaderMoKhoa){ leaderMoKhoa = false; if(_henXoaLeader) clearTimeout(_henXoaLeader); khoaHanForm(); return; }
+  const ma = prompt('Nhập MÃ LEADER để chỉnh deadline:');
+  if(ma===null) return;
+  if(typeof MA_LEADER!=='undefined' && ma.trim() && ma.trim()===String(MA_LEADER)){
+    leaderMoKhoa = true; chamLeader(); khoaHanForm();
+    baoToast('🔓 Đã mở quyền chỉnh deadline (30 phút)','ok');
+  } else {
+    baoToast('✖ Mã leader không đúng','err');
+  }
+}));
+khoaHanForm();   /* trạng thái ban đầu: khóa */
 
 try{
   MobileDragDrop.polyfill({ dragImageTranslateOverride: MobileDragDrop.scrollBehaviourDragImageTranslateOverride });
