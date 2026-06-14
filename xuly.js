@@ -68,6 +68,23 @@ function vaiTroNguoi(v, nguoi){
   return parts.includes(nguoi) ? 'ho' : null;
 }
 function nguoiChinhCua(v){ return (v.nguoi||'').split(',').map(x=>x.trim()).filter(Boolean)[0] || ''; }
+/* So sánh tự nhiên: "2" trước "10", "25" giữa "20"–"30"; hiểu cả số La Mã ở đầu (I, II, IV, IX, X...) */
+function laMaSoLaMa(s){ return s.length>0 && /^M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$/i.test(s); }
+function soLaMaSangSo(s){
+  const m = {I:1,V:5,X:10,L:50,C:100,D:500,M:1000}; let t=0; s=s.toUpperCase();
+  for(let i=0;i<s.length;i++){ const c=m[s[i]], n=m[s[i+1]]; if(n && c<n) t-=c; else t+=c; }
+  return t;
+}
+function giaTriLaMaDau(s){
+  const m = String(s||'').trim().match(/^([IVXLCDM]+)(?=[.)\-\s]|$)/i);
+  return (m && laMaSoLaMa(m[1])) ? soLaMaSangSo(m[1]) : null;
+}
+function soSanhTuNhien(a, b){
+  const ra = giaTriLaMaDau(a), rb = giaTriLaMaDau(b);
+  if(ra!==null && rb!==null && ra!==rb) return ra - rb;       /* cả hai là số La Mã → so giá trị */
+  if((ra!==null) !== (rb!==null)) return ra!==null ? -1 : 1;  /* mục La Mã đứng trước mục chữ thường */
+  return String(a||'').localeCompare(String(b||''), 'vi', { numeric:true, sensitivity:'base' });
+}
 function tinhTienDo(mada){
   const viec = NHIEM_VU.filter(v => v.mada === mada && !dangNgung(v));
   if(viec.length === 0) return 0;
@@ -928,7 +945,7 @@ function veTongHop(){
       + '<span class="th-c-pct"><span class="th-bar"><span class="th-fill" style="width:'+p+'%;background:'+mauPct(p)+'"></span></span><span class="th-pct" style="color:'+mauPct(p)+'">'+p+'%</span></span></div>';
   }
   function walk(node, depth){
-    [...node.con.values()].forEach(c=>{
+    [...node.con.values()].sort((a,b)=>soSanhTuNhien(a.ten,b.ten)).forEach(c=>{
       if(!nhanhKhop(c, fNguoi, fText)) return;
       const soCon = c.con.size;
       const soViec = c.viec.length;
@@ -942,7 +959,7 @@ function veTongHop(){
       const dangLoc = !!(fNguoi || fText);
       if(moNhanh.has(c.key) || dangLoc){
         walk(c, depth+1);                                   /* nhánh con */
-        c.viec.forEach(v=>{                                 /* việc gắn trực tiếp ở cấp này */
+        c.viec.slice().sort((a,b)=>soSanhTuNhien(a.nhiemvu,b.nhiemvu)).forEach(v=>{   /* việc gắn trực tiếp */
           if(vietKhop(v, fNguoi, fText))
             out.push(dongLa(v.nhiemvu || '(việc chưa đặt tên)', v, depth+1));
         });
@@ -1109,7 +1126,7 @@ function veViecCuaToi(){
         node.viec.push(v);
       });
       (function walk(node, depth){
-        [...node.con.values()].forEach(c=>{
+        [...node.con.values()].sort((a,b)=>soSanhTuNhien(a.ten,b.ten)).forEach(c=>{
           const soCon=c.con.size, soViec=c.viec.length;
           if(soCon===0 && soViec===1){ html += dongLaToi(c.ten, c.viec[0], depth); return; }
           const vsB = viecTrong(c).filter(v=>!dangNgung(v));
@@ -1118,7 +1135,7 @@ function veViecCuaToi(){
             + '<span class="th-ten" style="padding-left:'+(10+depth*18)+'px;font-weight:600"><span class="th-ico">'+(moNhanhToi.has(c.key)?'▾':'▸')+'</span>'+thoatHTML(c.ten)+'</span>'
             + '<span class="th-c-tt"></span><span class="th-c-ng th-dem">'+soViec+' việc</span>'
             + '<span class="th-c-pct"><span class="th-bar"><span class="th-fill" style="width:'+p+'%;background:'+mauPct(p)+'"></span></span><span class="th-pct" style="color:'+mauPct(p)+'">'+p+'%</span></span></div>';
-          if(moNhanhToi.has(c.key)){ walk(c, depth+1); c.viec.forEach(v=>{ html += dongLaToi(v.nhiemvu||tachCap(v.phancap).slice(-1)[0]||'(việc)', v, depth+1); }); }
+          if(moNhanhToi.has(c.key)){ walk(c, depth+1); c.viec.slice().sort((a,b)=>soSanhTuNhien(a.nhiemvu,b.nhiemvu)).forEach(v=>{ html += dongLaToi(v.nhiemvu||tachCap(v.phancap).slice(-1)[0]||'(việc)', v, depth+1); }); }
         });
       })(root, 1);
     });
