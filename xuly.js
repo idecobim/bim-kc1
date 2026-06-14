@@ -155,7 +155,7 @@ async function taiNhiemVu(){
     const res = await fetch(noiCache(LINK_CSV_NHIEMVU));
     if(res.ok){
       const kq = Papa.parse(await res.text(), {header:true, skipEmptyLines:true});
-      NHIEM_VU = kq.data.map(chuanHoaViec).filter(v => v.mada && v.nhiemvu);
+      NHIEM_VU = kq.data.map(chuanHoaViec).filter(v => v.mada && (v.nhiemvu || v.phancap));
     }
   }catch(e){ /* không sao */ }
 }
