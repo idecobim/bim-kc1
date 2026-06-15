@@ -30,13 +30,13 @@ const MA_LEADER = "KC1-LEADER";
      — nếu dữ liệu cũ dùng tên khác, sửa lại tên ở đây cho khớp.
    ============================================================ */
 const DANH_SACH_NHAN_SU = [
-  { ten: "Phạm Anh Khoa",     pin: "1111", role: "super_admin" },
-  { ten: "Huỳnh Minh Đức",    pin: "2222", role: "staff" },
-  { ten: "Hồ Công Bảo",       pin: "3333", role: "staff" },
-  { ten: "Vũ Minh Phúc",     pin: "4444", role: "staff" },
-  { ten: "Nguyễn Thành Cang", pin: "5555", role: "staff" },
-  { ten: "Trần Khắc Trường",  pin: "6666", role: "staff" },
-  { ten: "Phan Gia Bảo",      pin: "7777", role: "staff" }
+  { ten: "Phạm Anh Khoa",     pin: "25251325", role: "super_admin" },
+  { ten: "Huỳnh Minh Đức",    pin: "1234", role: "staff" },
+  { ten: "Hồ Công Bảo",       pin: "1998", role: "staff" },
+  { ten: "Vũ Minh Phúc",     pin: "16012001", role: "staff" },
+  { ten: "Nguyễn Thành Cang", pin: "1111", role: "staff" },
+  { ten: "Trần Khắc Trường",  pin: "0000", role: "staff" },
+  { ten: "Phan Gia Bảo",      pin: "2410", role: "staff" }
 ];
 
 /* Danh sách TÊN (dùng cho các ô chọn người trong form) — tự dẫn xuất, đừng sửa tay */
