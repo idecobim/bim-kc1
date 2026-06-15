@@ -26,8 +26,6 @@ const MA_LEADER = "KC1-LEADER";
    ⚠ HÃY ĐỔI CÁC MÃ PIN bên dưới thành mã riêng (mỗi người một mã).
    ⚠ PIN này cũng dùng làm mã ghi lên Google Sheets — xem hướng dẫn
      để khai BÁO các PIN tương ứng trong Apps Script (DANH_SACH_PIN).
-   Lưu ý: "Nguyễn Minh Phúc" theo yêu cầu mới (trước đây là "Vũ Minh Phúc")
-     — nếu dữ liệu cũ dùng tên khác, sửa lại tên ở đây cho khớp.
    ============================================================ */
 const DANH_SACH_NHAN_SU = [
   { ten: "Phạm Anh Khoa",     pin: "25251325", role: "super_admin" },
