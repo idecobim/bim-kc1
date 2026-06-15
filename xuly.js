@@ -1234,9 +1234,14 @@ function veViecCuaToi(){
 function idViec(v){ return v.mada+'|'+(v.phancap||'')+'|'+(v.nhiemvu||'')+'|'+v.nguoi; }
 function laMoi(v){ return veViecCuaToi._moi && veViecCuaToi._moi.has(idViec(v)); }
 function dongViecToi(v){
-  const capCuoi = tachCap(v.phancap).slice(-1)[0] || '';
+  const capArr = tachCap(v.phancap);
+  const capCuoi = capArr.slice(-1)[0] || '';
   const tenViec = v.nhiemvu || capCuoi || '(việc chưa đặt tên)';
-  const duong = (v.phancap ? thoatHTML(v.phancap) : '');
+  /* Nội dung có sẵn → hiện full phân cấp; trống (đã lấy level cuối làm tên) → bỏ level cuối khỏi đường dẫn */
+  const duongHt = (v.nhiemvu ? capArr : capArr.slice(0, -1)).join(' / ');
+  const duong = duongHt ? '<div class="toi-path"><i>'+thoatHTML(duongHt)+'</i></div>' : '';
+  const da = DU_AN.find(d=>d.ma===v.mada);
+  const maChip = '<span class="toi-ma" title="'+thoatHTML(da&&da.ten?da.ten:v.mada)+'">'+thoatHTML(v.mada)+'</span>';
   const c = chuanCot(v.trangthai);
   let pillTxt='Chưa', pillCol='var(--concrete)';
   if(c==='Hoàn thành'){ pillTxt='Xong'; pillCol='var(--green)'; }
@@ -1250,8 +1255,11 @@ function dongViecToi(v){
   const tn = dangNgung(v) ? '<div class="toi-tn">⏸ Tạm ngưng'+(String(v.tamngung).trim()&&String(v.tamngung).trim()!=='1'?': '+thoatHTML(v.tamngung):'')+'</div>' : '';
   const hanTxt = (v.han && v.han!=='-') ? '<span class="toi-han">⏳ '+thoatHTML(v.han)+'</span>' : '';
   return '<div class="toi-viec'+(v.vuongmac?' co-vm':'')+(dangNgung(v)?' co-tn':'')+'" data-uid="'+v.uid+'">'
-    + '<div class="toi-noidung">'+(duong?'<span class="toi-path">'+duong+'</span>':'')
-      + (laMoi(v)?'<span class="badge-moi">• Mới</span>':'') + badgeHT + '<span class="toi-tenviec">'+thoatHTML(tenViec)+'</span>'+hanTxt+cung+vm+tn+'</div>'
+    + '<div class="toi-noidung">'
+      + '<div class="toi-dong1">'+maChip
+      + (laMoi(v)?'<span class="badge-moi">• Mới</span>':'') + badgeHT
+      + '<span class="toi-tenviec">'+thoatHTML(tenViec)+'</span>'+hanTxt+cung+'</div>'
+      + duong + vm + tn + '</div>'
     + '<button class="toi-pill" type="button" data-ttpick="'+v.uid+'" style="color:'+pillCol+';border-color:'+pillCol+'" title="Bấm để đổi trạng thái">'+pillTxt+'</button>'
     + '<button class="toi-vm-nut'+(v.vuongmac?' on':'')+'" type="button" data-vm="'+v.uid+'" title="Báo/gỡ vướng mắc">⚠</button>'
     + '<button class="toi-ls-nut" type="button" data-ls="'+v.uid+'" title="Lịch sử / Soát xét">💬'+(soLichSu(v)?'<span class="ls-dem">'+soLichSu(v)+'</span>':'')+'</button>'

@@ -250,6 +250,8 @@
   .toi-viec{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line)}
   .toi-viec:hover{background:var(--paper)}
   .toi-noidung{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .toi-dong1{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .toi-ma{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--concrete);background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:1px 6px;white-space:nowrap}
   .toi-path{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--concrete)}
   .toi-tenviec{font-size:14px;color:var(--ink);font-weight:500}
   .toi-han{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--orange)}
