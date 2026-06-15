@@ -447,3 +447,13 @@
   #modalDangNhap .modal-nhap{ max-width:380px; }
   #footDangNhap a{ color:var(--orange); text-decoration:none; }
   #footDangNhap a:hover{ text-decoration:underline; }
+
+  /* ----- Ô bị khóa quyền (xám, không bấm được) ----- */
+  .o-khoa{opacity:.5;pointer-events:none;filter:grayscale(.4)}
+  select.o-khoa, input.o-khoa{background:var(--paper);cursor:not-allowed}
+
+  /* ----- Tag cảnh báo trên nhánh tổng hợp ----- */
+  .tag-tre,.tag-vm{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;padding:1px 6px;border-radius:8px;margin-left:6px;vertical-align:middle;white-space:nowrap}
+  .tag-tre{color:#fff;background:var(--red)}
+  .tag-vm{color:var(--ink);background:#F4C84A;border:1px solid #d9ad2e}
+  [data-theme="dark"] .tag-vm{color:#1a1a1a}
