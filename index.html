@@ -18,8 +18,8 @@
 <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@3.0.0-beta.0/scroll-behaviour.min.js"></script>
 
 <!-- ===== 3 FILE CUA HE THONG ===== -->
-<link rel="stylesheet" href="giaodien.css?v=24">
-<script src="cauhinh.js?v=24"></script>
+<link rel="stylesheet" href="giaodien.css?v=26">
+<script src="cauhinh.js?v=26"></script>
 </head>
 
 <div id="toast"></div>
@@ -260,6 +260,20 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modalLichSu" hidden>
+  <div class="modal modal-nhap" role="dialog" aria-labelledby="lsTitle">
+    <div class="modal-head"><h2 id="lsTitle">💬 Lịch sử / Soát xét</h2><button class="modal-x" type="button" id="lsX">✕</button></div>
+    <div style="padding:4px">
+      <div id="lsThread" class="ls-thread"></div>
+      <textarea id="lsO" rows="2" placeholder="Nhập ghi chú / nội dung trả lại..."></textarea>
+      <div class="nhap-nut">
+        <button type="button" class="btn-ghost" id="lsDong">Đóng</button>
+        <button type="button" class="btn-primary" id="lsThem">Thêm vào lịch sử</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modalNhap" hidden>
   <div class="modal modal-nhap" role="dialog" aria-labelledby="nhapTitle">
     <div class="modal-head"><h2 id="nhapTitle">Nhập</h2><button class="modal-x" type="button" id="nhapX">✕</button></div>
@@ -292,6 +306,6 @@
   <span>Nguồn dữ liệu: Google Sheets · Tự làm mới mỗi 5 phút</span>
 </footer>
 
-<script src="xuly.js?v=24"></script>
+<script src="xuly.js?v=26"></script>
 </body>
 </html>
