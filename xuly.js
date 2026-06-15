@@ -1235,7 +1235,7 @@ function idViec(v){ return v.mada+'|'+(v.phancap||'')+'|'+(v.nhiemvu||'')+'|'+v.
 function laMoi(v){ return veViecCuaToi._moi && veViecCuaToi._moi.has(idViec(v)); }
 function dongViecToi(v){
   const capCuoi = tachCap(v.phancap).slice(-1)[0] || '';
-  const tenViec = capCuoi || v.nhiemvu || '(việc chưa đặt tên)';
+  const tenViec = v.nhiemvu || capCuoi || '(việc chưa đặt tên)';
   const duong = (v.phancap ? thoatHTML(v.phancap) : '');
   const c = chuanCot(v.trangthai);
   let pillTxt='Chưa', pillCol='var(--concrete)';
