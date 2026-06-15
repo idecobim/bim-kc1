@@ -410,3 +410,10 @@
   /* ----- Nhãn Hỗ trợ ----- */
   .badge-ht{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;color:#fff;background:var(--concrete);padding:1px 6px;border-radius:8px;margin-right:6px;vertical-align:middle;white-space:nowrap}
   .th-vm + .badge-ht,.th-tn + .badge-ht{margin-left:0}
+
+  /* ----- Nút xóa công việc (đặt xa nút Lưu, kiểu cảnh báo) ----- */
+  .modal-foot{display:flex;align-items:center;gap:10px}
+  .modal-foot .modal-msg{flex:1;text-align:center}
+  .btn-xoa-viec{order:-1;margin-right:auto;border:1px solid var(--red);background:transparent;color:var(--red);font-family:'Be Vietnam Pro',sans-serif;font-size:13px;padding:8px 12px;border-radius:4px;cursor:pointer;opacity:.75}
+  .btn-xoa-viec:hover{background:var(--red);color:#fff;opacity:1}
+  .btn-xoa-viec[hidden]{display:none}

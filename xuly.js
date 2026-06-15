@@ -17,6 +17,7 @@ function chamHoatDong(){
 let lanGhiCuoi = 0;
 let maDangSua = null;
 let uidDangSua = null;
+let gocDangSua = null;   /* chụp danh tính việc đang sửa, không phụ thuộc uid (uid bị cấp lại mỗi lần tải) */
 let madaKanbanHienTai = null;
 let kFilter = { hangmuc: null, nguoi: null };
 let chonUids = new Set();      /* thẻ đang chọn — theo uid, giữ qua các lần vẽ lại */
@@ -503,6 +504,8 @@ $('ctx-p-del').onclick = async () => {
 function moFormSuaViec(uid){
   const nv = NHIEM_VU.find(v => v.uid === uid); if(!nv) return;
   uidDangSua = nv.uid;
+  gocDangSua = { mada: nv.mada, nvgoc: nv.nhiemvu, nguoigoc: nv.nguoi, phancapgoc: nv.phancap || '' };
+  if($('xoaViec')) $('xoaViec').hidden = false;
   $('tieuDeFormCV').textContent = '✎ Chỉnh sửa công việc';
   $('guiViec').textContent = 'Lưu cập nhật';
   $('cv-mada').value = nv.mada;
@@ -653,7 +656,8 @@ $('nutThemDuAn').addEventListener('click', ()=>{
 });
 
 $('btnGiaoViecKanban').addEventListener('click', ()=>{
-  uidDangSua = null;
+  uidDangSua = null; gocDangSua = null;
+  if($('xoaViec')) $('xoaViec').hidden = true;
   $('tieuDeFormCV').textContent = '🗒 Khai báo công việc';
   $('guiViec').textContent = 'Ghi vào Sheets';
   $('cv-mada').value = madaKanbanHienTai || '';
@@ -701,6 +705,35 @@ $('guiDuAn').addEventListener('click', async ()=>{
   }
 });
 
+/* Xóa công việc — chỉ leader (gác bằng MÃ LEADER), đặt xa nút Lưu để tránh bấm nhầm */
+if($('xoaViec')) $('xoaViec').addEventListener('click', async ()=>{
+  if(!gocDangSua) return;
+  if(!leaderMoKhoa){
+    const ma = await hoiNhap({ tieuDe:'🗑 Xóa công việc', nhan:'Thao tác xóa cần MÃ LEADER. Nhập mã để xác nhận:', giaTri:'', goiY:'Mã leader' });
+    if(ma===null) return;
+    if(!(typeof MA_LEADER!=='undefined' && ma.trim() && ma.trim()===String(MA_LEADER))){ baoToast('✖ Mã leader không đúng','err'); return; }
+    leaderMoKhoa = true; chamLeader();
+  }
+  if(!confirm('Xóa hẳn công việc này khỏi Sheets? Không thể hoàn tác.')) return;
+  let mk = maXacNhanCache || prompt('Nhập mã xác nhận của phòng để xóa:');
+  if(!mk) return;
+  const g = gocDangSua, msg = $('msgViec');
+  msg.className='modal-msg'; msg.textContent='Đang xóa...';
+  try{
+    const res = await fetch(LINK_APPS_SCRIPT, { method:'POST', body: JSON.stringify({
+      type:'xoanhiemvu', matkhau: mk,
+      data:{ mada: g.mada, items:[{ nhiemvu: g.nvgoc, nguoi: g.nguoigoc, phancap: g.phancapgoc }] } }) });
+    const kq = await res.json();
+    if(kq.ok){
+      nhoMaTrongPhien(mk); chamHoatDong(); lanGhiCuoi = Date.now();
+      NHIEM_VU = NHIEM_VU.filter(x=> !(x.mada===g.mada && (x.nhiemvu||'')===(g.nvgoc||'') && x.nguoi===g.nguoigoc && (x.phancap||'')===(g.phancapgoc||'')));
+      baoToast('🗑 Đã xóa công việc','ok');
+      $('modalViec').hidden = true; moCuonNeuHetModal();
+      veViewPhu(); veDanhSach(); if(!$('modalKanban').hidden) veKanban();
+    } else { msg.className='modal-msg err'; msg.textContent='✖ '+(kq.loi||'Lỗi'); }
+  }catch(err){ msg.className='modal-msg err'; msg.textContent='✖ '+err.message; }
+});
+
 $('guiViec').addEventListener('click', async ()=>{
   const v = id => $(id).value.trim();
   const msg = $('msgViec');
@@ -708,25 +741,27 @@ $('guiViec').addEventListener('click', async ()=>{
   if((!v('cv-phancap') && !v('cv-nhiemvu')) || !v('cv-nguoi-chinh')){ msg.className='modal-msg err'; msg.textContent='✖ Cần Phân cấp (hoặc Nội dung) và Người thực hiện'; return; }
   if(!v('cv-matkhau')){ msg.className='modal-msg err'; msg.textContent='✖ Nhập mã xác nhận của phòng'; return; }
 
-  const nvGoc = uidDangSua ? NHIEM_VU.find(x => x.uid === uidDangSua) : null;
+  const dangSua = !!gocDangSua;
   const duLieuViec = {
-    mada:v('cv-mada'), phancap:v('cv-phancap'), hangmuc:(nvGoc?(nvGoc.hangmuc||''):''), nhiemvu:v('cv-nhiemvu'), nguoi:ghepNguoi(),
+    mada:v('cv-mada'), phancap:v('cv-phancap'), hangmuc:'', nhiemvu:v('cv-nhiemvu'), nguoi:ghepNguoi(),
     uutien:v('cv-uutien'), han:v('cv-han')||'-', trangthai:v('cv-trangthai'), ghichu:v('cv-ghichu'), vuongmac:v('cv-vuongmac'), tamngung:v('cv-tamngung')
   };
-  if(nvGoc){
-    duLieuViec.magoc = nvGoc.mada;
-    duLieuViec.nvgoc = nvGoc.nhiemvu;
-    duLieuViec.nguoigoc = nvGoc.nguoi;   /* chống sửa nhầm việc trùng tên */
-    duLieuViec.phancapgoc = nvGoc.phancap || '';
+  if(dangSua){
+    duLieuViec.magoc = gocDangSua.mada;
+    duLieuViec.nvgoc = gocDangSua.nvgoc;
+    duLieuViec.nguoigoc = gocDangSua.nguoigoc;   /* danh tính gốc đã chụp lúc mở form */
+    duLieuViec.phancapgoc = gocDangSua.phancapgoc || '';
   }
-  const ok = await guiLenSheets(nvGoc ? 'suanhiemvu' : 'nhiemvu', duLieuViec, v('cv-matkhau'), msg, $('guiViec'));
+  const ok = await guiLenSheets(dangSua ? 'suanhiemvu' : 'nhiemvu', duLieuViec, v('cv-matkhau'), msg, $('guiViec'));
   if(ok){
     nhoMaTrongPhien(v('cv-matkhau')); chamHoatDong(); lanGhiCuoi = Date.now();
-    if(nvGoc){
-      const giuUid = nvGoc.uid;
-      Object.assign(nvGoc, duLieuViec, {uid: giuUid});
+    if(dangSua){
+      /* cập nhật bản trong bộ nhớ: tìm theo uid, nếu lạc (do tải lại) thì tìm theo danh tính gốc */
+      let nvGoc = NHIEM_VU.find(x => x.uid === uidDangSua)
+        || NHIEM_VU.find(x => x.mada===gocDangSua.mada && (x.nhiemvu||'')===(gocDangSua.nvgoc||'') && x.nguoi===gocDangSua.nguoigoc && (x.phancap||'')===(gocDangSua.phancapgoc||''));
+      if(nvGoc){ const giuUid = nvGoc.uid; Object.assign(nvGoc, duLieuViec, {uid: giuUid}); }
       msg.textContent = '✔ Đã lưu!';
-      setTimeout(()=>{ $('modalViec').hidden = true; moCuonNeuHetModal(); }, 900);
+      setTimeout(()=>{ $('modalViec').hidden = true; moCuonNeuHetModal(); }, 700);
     } else {
       NHIEM_VU.push({ uid: ++demUid, ...duLieuViec });
       msg.textContent = '✔ Đã giao việc!';
@@ -910,10 +945,7 @@ function veTongHop(){
   const fText = boDau($('thTim').value);
   window._anXongCay = $('thAnXong') && $('thAnXong').getAttribute('aria-pressed')==='true';
   const root = dungCay();
-  if(!veTongHop._seeded && root.con.size){
-    root.con.forEach(c=>moNhanh.add(c.key));   /* mở sẵn các dự án cấp 1 */
-    veTongHop._seeded = true;
-  }
+  /* Mặc định: gập hết — chỉ hiện cấp 1 (tên dự án). Người dùng tự mở nhánh khi cần. */
   /* Khi bộ lọc VỪA thay đổi: tự mở các nhánh có kết quả (chỉ 1 lần), sau đó cho đóng/mở tay */
   const chuKyLoc = fNguoi + '\u0001' + fText;
   if(veTongHop._locTruoc !== chuKyLoc){
@@ -1295,18 +1327,20 @@ async function datVuongMac(uid){
   let mk = maXacNhanCache || prompt('Nhập mã xác nhận của phòng để lưu:');
   if(!mk) return;
   const cu = nv.vuongmac; nv.vuongmac = moi;
-  try{
-    const res = await fetch(LINK_APPS_SCRIPT, { method:'POST', body: JSON.stringify({
+  veViewPhu(); veDanhSach();   /* hiện ngay */
+  fetch(LINK_APPS_SCRIPT, { method:'POST', body: JSON.stringify({
       type:'suanhiemvu', matkhau: mk, data:{
         magoc: nv.mada, nvgoc: nv.nhiemvu, nguoigoc: nv.nguoi, phancapgoc: nv.phancap||'',
         mada: nv.mada, phancap: nv.phancap||'', hangmuc: nv.hangmuc||'', nhiemvu: nv.nhiemvu,
         nguoi: nv.nguoi, uutien: nv.uutien, han: nv.han||'-', trangthai: chuanCot(nv.trangthai),
         ghichu: nv.ghichu||'', vuongmac: moi, tamngung: nv.tamngung||''
-      } }) });
-    const kq = await res.json();
-    if(kq.ok){ nhoMaTrongPhien(mk); chamHoatDong(); lanGhiCuoi = Date.now(); baoToast(moi?'⚠ Đã báo vướng mắc':'✔ Đã gỡ vướng mắc','ok'); veViecCuaToi(); veViewPhu(); }
-    else { nv.vuongmac = cu; baoToast('✖ '+(kq.loi||'Lỗi'),'err'); }
-  }catch(err){ nv.vuongmac = cu; baoToast('✖ '+err.message,'err'); }
+      } }) })
+    .then(r=>r.json())
+    .then(kq=>{
+      if(kq.ok){ nhoMaTrongPhien(mk); chamHoatDong(); lanGhiCuoi = Date.now(); }
+      else { nv.vuongmac = cu; veViewPhu(); veDanhSach(); baoToast('✖ Chưa lưu được: '+(kq.loi||'Lỗi'),'err'); }
+    })
+    .catch(err=>{ nv.vuongmac = cu; veViewPhu(); veDanhSach(); baoToast('✖ Mất kết nối, chưa lưu','err'); });
 }
 /* Đánh dấu / gỡ TẠM NGƯNG nhanh (ghi cả việc về Sheets) */
 async function datTamNgung(uid){
@@ -1318,35 +1352,42 @@ async function datTamNgung(uid){
   let mk = maXacNhanCache || prompt('Nhập mã xác nhận của phòng để lưu:');
   if(!mk) return;
   const cu = nv.tamngung; nv.tamngung = moi;
-  try{
-    const res = await fetch(LINK_APPS_SCRIPT, { method:'POST', body: JSON.stringify({
+  veViewPhu(); veDanhSach();   /* hiện ngay */
+  fetch(LINK_APPS_SCRIPT, { method:'POST', body: JSON.stringify({
       type:'suanhiemvu', matkhau: mk, data:{
         magoc: nv.mada, nvgoc: nv.nhiemvu, nguoigoc: nv.nguoi, phancapgoc: nv.phancap||'',
         mada: nv.mada, phancap: nv.phancap||'', hangmuc: nv.hangmuc||'', nhiemvu: nv.nhiemvu,
         nguoi: nv.nguoi, uutien: nv.uutien, han: nv.han||'-', trangthai: chuanCot(nv.trangthai),
         ghichu: nv.ghichu||'', vuongmac: nv.vuongmac||'', tamngung: moi
-      } }) });
-    const kq = await res.json();
-    if(kq.ok){ nhoMaTrongPhien(mk); chamHoatDong(); lanGhiCuoi = Date.now(); baoToast(moi?'⏸ Đã tạm ngưng':'▶ Đã bỏ tạm ngưng','ok'); veViecCuaToi(); veViewPhu(); }
-    else { nv.tamngung = cu; baoToast('✖ '+(kq.loi||'Lỗi'),'err'); }
-  }catch(err){ nv.tamngung = cu; baoToast('✖ '+err.message,'err'); }
+      } }) })
+    .then(r=>r.json())
+    .then(kq=>{
+      if(kq.ok){ nhoMaTrongPhien(mk); chamHoatDong(); lanGhiCuoi = Date.now(); }
+      else { nv.tamngung = cu; veViewPhu(); veDanhSach(); baoToast('✖ Chưa lưu được: '+(kq.loi||'Lỗi'),'err'); }
+    })
+    .catch(err=>{ nv.tamngung = cu; veViewPhu(); veDanhSach(); baoToast('✖ Mất kết nối, chưa lưu','err'); });
 }
 /* Cập nhật trạng thái 1 việc về Sheets (dùng cho dropdown + chuột phải) */
-async function capNhatTrangThaiViec(uid, ttMoi){
+function capNhatTrangThaiViec(uid, ttMoi){
   const nv = NHIEM_VU.find(v=>v.uid===uid); if(!nv) return false;
   const ttCu = nv.trangthai;
   if(chuanCot(ttCu)===ttMoi) return false;
   let mk = maXacNhanCache || prompt('Nhập mã xác nhận của phòng để lưu:');
   if(!mk) return false;
+  /* cập nhật giao diện NGAY */
   nv.trangthai = ttMoi;
-  try{
-    const res = await fetch(LINK_APPS_SCRIPT, { method:'POST',
-      body: JSON.stringify({ type:'sua_trangthai_nhiemvu', matkhau: mk,
-        data:{ mada: nv.mada, trangthai: ttMoi, items:[{nhiemvu:nv.nhiemvu, nguoi:nv.nguoi, phancap:nv.phancap}] } }) });
-    const kq = await res.json();
-    if(kq.ok){ nhoMaTrongPhien(mk); chamHoatDong(); lanGhiCuoi = Date.now(); baoToast('✔ Đã cập nhật', 'ok'); veViewPhu(); veDanhSach(); return true; }
-    nv.trangthai = ttCu; baoToast('✖ '+(kq.loi||'Lỗi'), 'err'); return false;
-  }catch(err){ nv.trangthai = ttCu; baoToast('✖ '+err.message, 'err'); return false; }
+  veViewPhu(); veDanhSach();
+  /* lưu Sheets chạy NGẦM */
+  fetch(LINK_APPS_SCRIPT, { method:'POST',
+    body: JSON.stringify({ type:'sua_trangthai_nhiemvu', matkhau: mk,
+      data:{ mada: nv.mada, trangthai: ttMoi, items:[{nhiemvu:nv.nhiemvu, nguoi:nv.nguoi, phancap:nv.phancap}] } }) })
+    .then(r=>r.json())
+    .then(kq=>{
+      if(kq.ok){ nhoMaTrongPhien(mk); chamHoatDong(); lanGhiCuoi = Date.now(); }
+      else { nv.trangthai = ttCu; veViewPhu(); veDanhSach(); baoToast('✖ Chưa lưu được: '+(kq.loi||'Lỗi'), 'err'); }
+    })
+    .catch(err=>{ nv.trangthai = ttCu; veViewPhu(); veDanhSach(); baoToast('✖ Mất kết nối, chưa lưu: '+err.message, 'err'); });
+  return true;
 }
 /* Đổi trạng thái ngay trong "Việc của tôi" — ghi 1 việc về Sheets */
 $('toiNoiDung').addEventListener('change', async e=>{
@@ -1555,4 +1596,8 @@ $('cbChiTiet').addEventListener('click', e=>{
   moFormSuaViec(Number(d.dataset.cbuid));
 });
 taiDuLieu();
-setInterval(()=>{ if(Date.now() - lanGhiCuoi > 6*60*1000) taiDuLieu(); }, 5*60*1000);
+setInterval(()=>{
+  if(Date.now() - lanGhiCuoi <= 6*60*1000) return;
+  if(document.querySelector('.modal-overlay:not([hidden])')) return;   /* đang mở form thì hoãn, tránh xáo trộn khi đang sửa */
+  taiDuLieu();
+}, 5*60*1000);
