@@ -206,6 +206,7 @@ function dongMeta(nhan, giaTri){
 function veDanhSach(){
   const kw = boDau($('oTimKiem').value), l = $('locLoai').value, g = $('locGiaiDoan').value, t = $('locTrangThai').value, sx = $('sapXep').value;
   let ds = DU_AN.filter(d =>
+    xemDuocDuAn(d.ma) &&
     (!kw || boDau(d.ten+' '+d.ma+' '+d.phutrach).includes(kw)) &&
     (!l || d.loai===l) && (!g || d.giaidoan===g) && (!t || d.trangthai===t)
   );
@@ -904,6 +905,7 @@ function tachCap(s){ return String(s||'').split('/').map(x=>x.trim()).filter(Boo
 function dungCay(){
   const root = {ten:'', con:new Map(), viec:[], key:''};
   NHIEM_VU.forEach(v=>{
+    if(!xemDuocDuAn(v.mada)) return;   /* mục 5: ẩn dự án không tham gia */
     const segs = [v.mada].concat(tachCap(v.phancap));
     let node = root, key='';
     segs.forEach(seg=>{
@@ -962,9 +964,10 @@ function veTongHop(){
     const vm = v.vuongmac ? '<span class="th-vm" title="'+thoatHTML(v.vuongmac)+'">⚠</span>' : '';
     const tn = dangNgung(v) ? '<span class="th-tn" title="Tạm ngưng: '+thoatHTML(v.tamngung)+'">⏸</span>' : '';
     const htCo = (fNguoi && vaiTroNguoi(v, fNguoi)==='ho') ? '<span class="badge-ht" title="'+thoatHTML(fNguoi)+' là người hỗ trợ (chính: '+thoatHTML(nguoiChinhCua(v))+')">🤝 HT</span>' : '';
-    return '<div class="th-row th-leaf'+(v.vuongmac?' co-vm':'')+(dangNgung(v)?' co-tn':'')+'" data-cbuid="'+v.uid+'">'
+    const ql = quanLyDuoc(v.mada);
+    return '<div class="th-row th-leaf'+(v.vuongmac?' co-vm':'')+(dangNgung(v)?' co-tn':'')+'"'+(ql?' data-cbuid="'+v.uid+'"':'')+'>'
       + '<span class="th-ten" style="padding-left:'+pad+'px"><span class="th-ico"></span>'+vm+tn+htCo+thoatHTML(ten)+ghichu+'</span>'
-      + '<span class="th-c-tt" data-ttpick="'+v.uid+'" title="Bấm để đổi trạng thái">'+chipTrangThaiNho(v.trangthai)+'</span>'
+      + '<span class="th-c-tt"'+(ql?' data-ttpick="'+v.uid+'" title="Bấm để đổi trạng thái"':'')+'>'+(ql?chipTrangThaiNho(v.trangthai):'')+'</span>'
       + '<span class="th-c-ng">'+hienNguoi(v.nguoi)+'</span>'
       + '<span class="th-c-pct"><span class="th-bar"><span class="th-fill" style="width:'+p+'%;background:'+mauPct(p)+'"></span></span><span class="th-pct" style="color:'+mauPct(p)+'">'+p+'%</span></span></div>';
   }
@@ -1092,11 +1095,16 @@ function veViecCuaToi(){
   /* nút mở/gập chỉ hiện khi xem dạng cây */
   if($('toiMoTatCa')) $('toiMoTatCa').hidden = (cheDoToi!=='cay');
   if($('toiGapTatCa')) $('toiGapTatCa').hidden = (cheDoToi!=='cay');
+  /* mục 2: thành viên chỉ xem việc của chính mình; leader/admin được chọn người khác */
+  const quanLyChung = laQuanLyChung();
+  if(!quanLyChung && nguoiDangNhap){ selT.value = nguoiDangNhap.ten; }
+  selT.disabled = !quanLyChung;
+  selT.title = quanLyChung ? '' : 'Chỉ leader/quản trị mới xem được việc của người khác';
   nguoiCuaToi = selT.value;
   const wrap = $('toiNoiDung');
   if(!nguoiCuaToi){ wrap.innerHTML = '<div class="th-empty">Chọn tên bạn ở trên để xem việc được giao.</div>'; if($('toiLocDA')) $('toiLocDA').innerHTML='<option value="">Tất cả dự án</option>'; return; }
 
-  let viec = NHIEM_VU.filter(v => v.nguoi.split(',').map(s=>s.trim()).includes(nguoiCuaToi));
+  let viec = NHIEM_VU.filter(v => v.nguoi.split(',').map(s=>s.trim()).includes(nguoiCuaToi) && xemDuocDuAn(v.mada));
   if(!viec.length){ wrap.innerHTML = '<div class="th-empty">Không có việc nào giao cho '+thoatHTML(nguoiCuaToi)+'.</div>'; if($('toiLocDA')) $('toiLocDA').innerHTML='<option value="">Tất cả dự án</option>'; return; }
 
   /* phát hiện việc MỚI chưa xem (1 lần/phiên cho mỗi người) */
@@ -1458,14 +1466,16 @@ function moBaoCao(text){ $('bcNoiDung').value = text; moOverlay('modalBaoCao'); 
 
 function baoCaoPhong(){
   const L = [];
+  const DA = DU_AN.filter(d=>xemDuocDuAn(d.ma));
+  const NV = NHIEM_VU.filter(v=>xemDuocDuAn(v.mada));
   L.push('BÁO CÁO TIẾN ĐỘ — ' + TEN_DON_VI);
   L.push('Ngày ' + ngayHomNay());
   L.push('');
-  const tongTD = DU_AN.length ? Math.round(DU_AN.reduce((s,d)=>s+tinhTienDo(d.ma),0)/DU_AN.length) : 0;
-  L.push('Tổng dự án: ' + DU_AN.length + ' · Tiến độ TB: ' + tongTD + '%');
+  const tongTD = DA.length ? Math.round(DA.reduce((s,d)=>s+tinhTienDo(d.ma),0)/DA.length) : 0;
+  L.push('Tổng dự án: ' + DA.length + ' · Tiến độ TB: ' + tongTD + '%');
   L.push('');
   L.push('— TIẾN ĐỘ THEO DỰ ÁN —');
-  DU_AN.slice().sort((a,b)=>tinhTienDo(a.ma)-tinhTienDo(b.ma)).forEach(d=>{
+  DA.slice().sort((a,b)=>tinhTienDo(a.ma)-tinhTienDo(b.ma)).forEach(d=>{
     L.push('• ' + d.ma + (d.ten?' '+d.ten:'') + ': ' + tinhTienDo(d.ma) + '%');
   });
   const tre = dsTreHan();
@@ -1473,12 +1483,12 @@ function baoCaoPhong(){
   L.push('— TRỄ HẠN (' + tre.length + ') —');
   if(!tre.length) L.push('(không có)');
   tre.forEach(x=> L.push('• [' + x.mada + '] ' + x.ten + ' — ' + x.nguoi + ' — trễ ' + x.tre + ' ngày'));
-  const vm = NHIEM_VU.filter(v=>v.vuongmac && String(v.vuongmac).trim());
+  const vm = NV.filter(v=>v.vuongmac && String(v.vuongmac).trim());
   L.push('');
   L.push('— VƯỚNG MẮC (' + vm.length + ') —');
   if(!vm.length) L.push('(không có)');
   vm.forEach(v=> L.push('• [' + v.mada + '] ' + tenViecNgan(v) + ' — ' + v.nguoi + ' — ' + v.vuongmac));
-  const tn = NHIEM_VU.filter(v=>dangNgung(v));
+  const tn = NV.filter(v=>dangNgung(v));
   if(tn.length){
     L.push('');
     L.push('— TẠM NGƯNG (' + tn.length + ') —');
@@ -1489,7 +1499,7 @@ function baoCaoPhong(){
 
 function baoCaoCuaToi(){
   if(!nguoiCuaToi) return 'Hãy chọn tên ở tab "Việc của tôi" trước khi tạo báo cáo.';
-  let viec = NHIEM_VU.filter(v => v.nguoi.split(',').map(s=>s.trim()).includes(nguoiCuaToi));
+  let viec = NHIEM_VU.filter(v => v.nguoi.split(',').map(s=>s.trim()).includes(nguoiCuaToi) && xemDuocDuAn(v.mada));
   const locDA = $('toiLocDA') ? $('toiLocDA').value : '';
   if(locDA) viec = viec.filter(v=>v.mada===locDA);
   const L = [];
@@ -1586,7 +1596,7 @@ if($('modalLichSu')) $('modalLichSu').addEventListener('click', e=>{ if(e.target
 if($('lsThem')) $('lsThem').addEventListener('click', ()=>{
   const nv = NHIEM_VU.find(v=>v.uid===lsUid); if(!nv) return;
   const text = $('lsO').value.trim(); if(!text){ $('lsO').focus(); return; }
-  let tac = nguoiCuaToi; if(!tac){ tac = (prompt('Ghi với tên/vai trò nào?','KCS')||'').trim() || 'KCS'; }
+  let tac = nguoiDangNhap ? nguoiDangNhap.ten : (nguoiCuaToi || 'Người dùng');
   let mk = maXacNhanCache || prompt('Nhập mã xác nhận của phòng để lưu:'); if(!mk) return;
   const entry = '['+nhanThoiGian()+' - '+tac+']: '+text;
   const cu = nv.lichsukcs || '';
@@ -1610,11 +1620,13 @@ if($('lsThem')) $('lsThem').addEventListener('click', ()=>{
 function dsTreHan(){
   const out = [];
   NHIEM_VU.forEach(v=>{
+    if(!xemDuocDuAn(v.mada)) return;
     if(chuanCot(v.trangthai)==='Hoàn thành') return;
     const n = soNgayConLai(docNgay(v.han));
     if(n !== null && n < 0) out.push({loai:'việc', mada:v.mada, ten:v.nhiemvu, phancap:v.phancap, nguoi:v.nguoi, tre:-n, uid:v.uid});
   });
   DU_AN.forEach(d=>{
+    if(!xemDuocDuAn(d.ma)) return;
     if(tinhTienDo(d.ma) >= 100) return;
     const n = soNgayConLai(docNgay(d.hannop));
     if(n !== null && n < 0) out.push({loai:'dự án', mada:d.ma, ten:d.ten, phancap:'', nguoi:d.phutrach, tre:-n, uid:null});
@@ -1660,6 +1672,23 @@ function laLeaderCuaDuAn(mada){
   return !!(da && da.leader && String(da.leader).trim()===nguoiDangNhap.ten);
 }
 function datQuyenTheoDuAn(mada){ document.body.classList.toggle('is-leader', laLeaderCuaDuAn(mada)); }
+/* Quản lý được (thấy trạng thái, sửa, deadline) = admin hoặc leader của dự án đó */
+function quanLyDuoc(mada){ return laLeaderCuaDuAn(mada); }
+/* Tham gia dự án = admin / leader / có tên trong Phụ trách / được giao việc trong dự án */
+function thamGiaDuAn(mada){
+  if(laAdmin()) return true;
+  if(!nguoiDangNhap) return false;
+  const ten = nguoiDangNhap.ten;
+  const da = DU_AN.find(d=>d.ma===mada);
+  if(da){
+    if(String(da.leader||'').trim()===ten) return true;
+    if(String(da.phutrach||'').split(',').map(s=>s.trim()).includes(ten)) return true;
+  }
+  return NHIEM_VU.some(v=>v.mada===mada && v.nguoi.split(',').map(s=>s.trim()).includes(ten));
+}
+function xemDuocDuAn(mada){ return thamGiaDuAn(mada); }
+/* Được xem việc của người khác (Tab 3) = admin hoặc đang là leader của ít nhất 1 dự án */
+function laQuanLyChung(){ return laAdmin() || (!!nguoiDangNhap && DU_AN.some(d=>String(d.leader||'').trim()===nguoiDangNhap.ten)); }
 function capNhatQuyen(){ document.body.classList.toggle('is-leader', laAdmin()); }
 function dongBoQuyen(){
   if(!$('modalKanban').hidden && madaKanbanHienTai) datQuyenTheoDuAn(madaKanbanHienTai);

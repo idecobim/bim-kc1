@@ -215,9 +215,10 @@
   .th-cong-cu select{font-family:'Be Vietnam Pro',sans-serif;font-size:13.5px;padding:7px 10px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer}
   .th-nut{font-family:'Saira Condensed',sans-serif;font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.05em;border:1px solid var(--ink);background:var(--white);color:var(--ink);padding:7px 12px;border-radius:2px}
   .th-nut:hover{background:var(--ink);color:var(--white)}
-  .th-cay{max-height:62vh;overflow-y:auto}
+  .th-scroll{max-height:62vh;overflow-y:auto;scrollbar-gutter:stable}
+  .th-cay{}
   #viewTongHop{--w-tt:84px;--w-ng:120px;--w-pct:130px}
-  .th-head{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--ink);color:var(--white);font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase}
+  .th-head{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--ink);color:var(--white);font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase}
   .th-head .th-ten{flex:1;color:var(--white)}
   .th-head .th-c-tt,.th-head .th-c-ng,.th-head .th-c-pct{color:var(--white)}
   .th-row{display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid var(--line);font-size:13.5px}
@@ -338,7 +339,7 @@
     #viewTongHop{--w-tt:64px;--w-ng:70px;--w-pct:96px}
     .th-head,.th-row{font-size:12.5px;gap:5px}
     .th-c-ng{font-size:10px}
-    .th-cay{max-height:none}
+    .th-scroll{max-height:none}
 
     /* Việc của tôi: nút to dễ chạm */
     .toi-pill{min-width:54px;padding:8px 8px;font-size:13px}
@@ -433,12 +434,11 @@
 
   /* ===================== PHÂN QUYỀN (đăng nhập / leader) ===================== */
   /* Ẩn mặc định — chỉ hiện khi body có class .is-leader (super_admin HOẶC leader của dự án đang mở) */
-  .nut-mo-han, #ctx-p-del, .quyen-leader-tab{ display:none; }
+  .nut-mo-han, #ctx-p-del{ display:none; }
   #xoaViec{ display:none; }
   body.is-leader .nut-mo-han{ display:inline-block; }
   body.is-leader #xoaViec:not([hidden]){ display:inline-block; }
   body.is-leader #ctx-p-del{ display:flex; }
-  body.is-leader .quyen-leader-tab{ display:inline-flex; }
 
   /* Ẩn ô "Mã xác nhận" trong form (đã dùng PIN đăng nhập tự động) */
   .f-group:has(#cv-matkhau), .f-group:has(#da-matkhau){ display:none; }

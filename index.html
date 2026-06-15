@@ -18,8 +18,8 @@
 <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@3.0.0-beta.0/scroll-behaviour.min.js"></script>
 
 <!-- ===== 3 FILE CUA HE THONG ===== -->
-<link rel="stylesheet" href="giaodien.css?v=27">
-<script src="cauhinh.js?v=27"></script>
+<link rel="stylesheet" href="giaodien.css?v=29">
+<script src="cauhinh.js?v=29"></script>
 </head>
 
 <div id="toast"></div>
@@ -88,7 +88,7 @@
 
 <div class="view-tabs">
   <button class="view-tab active" type="button" data-view="duan">Dự án</button>
-  <button class="view-tab quyen-leader-tab" type="button" data-view="tonghop">Bảng tổng hợp</button>
+  <button class="view-tab" type="button" data-view="tonghop">Bảng tổng hợp</button>
   <button class="view-tab" type="button" data-view="toi">Việc của tôi</button>
 </div>
 
@@ -122,13 +122,15 @@
     <button id="thBaoCao" type="button" class="th-toggle" title="Tạo báo cáo phòng để copy">📋 Báo cáo</button>
   </div>
   <div class="chu-thich">Bấm trái vào việc: đổi trạng thái · Bấm phải / nhấn giữ: xem chi tiết · ⚠ vướng mắc · ⏸ tạm ngưng (không tính %)</div>
-  <div class="th-head">
-    <span class="th-ten">Hạng mục / công việc</span>
-    <span class="th-c-tt">Trạng thái</span>
-    <span class="th-c-ng">Nhân sự</span>
-    <span class="th-c-pct">Tiến độ</span>
+  <div class="th-scroll">
+    <div class="th-head">
+      <span class="th-ten">Hạng mục / công việc</span>
+      <span class="th-c-tt">Trạng thái</span>
+      <span class="th-c-ng">Nhân sự</span>
+      <span class="th-c-pct">Tiến độ</span>
+    </div>
+    <div id="thCay" class="th-cay"></div>
   </div>
-  <div id="thCay" class="th-cay"></div>
   <p class="th-ghichu">% của nhánh cha tự tính trung bình từ các việc con (Xong 100 · Đang/Duyệt 50 · Chưa 0). Nhân viên kéo trạng thái ở Kanban hoặc "Việc của tôi", số ở đây tự lên.</p>
 </section>
 
@@ -320,6 +322,6 @@
   <span>Nguồn dữ liệu: Google Sheets · Tự làm mới mỗi 5 phút</span>
 </footer>
 
-<script src="xuly.js?v=27"></script>
+<script src="xuly.js?v=29"></script>
 </body>
 </html>
