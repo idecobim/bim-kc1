@@ -18,8 +18,8 @@
 <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@3.0.0-beta.0/scroll-behaviour.min.js"></script>
 
 <!-- ===== 3 FILE CUA HE THONG ===== -->
-<link rel="stylesheet" href="giaodien.css?v=26">
-<script src="cauhinh.js?v=26"></script>
+<link rel="stylesheet" href="giaodien.css?v=27">
+<script src="cauhinh.js?v=27"></script>
 </head>
 
 <div id="toast"></div>
@@ -88,7 +88,7 @@
 
 <div class="view-tabs">
   <button class="view-tab active" type="button" data-view="duan">Dự án</button>
-  <button class="view-tab" type="button" data-view="tonghop">Bảng tổng hợp</button>
+  <button class="view-tab quyen-leader-tab" type="button" data-view="tonghop">Bảng tổng hợp</button>
   <button class="view-tab" type="button" data-view="toi">Việc của tôi</button>
 </div>
 
@@ -214,6 +214,7 @@
         <select id="da-trangthai"><option>Đang triển khai</option><option>Tạm ngưng</option><option>Đã hoàn thiện</option></select></div>
       <div class="f-group"><label>Hạn nộp <button type="button" class="nut-mo-han" data-han="da-hannop">🔒 Đổi hạn (leader)</button></label><input id="da-hannop" placeholder="dd/mm/yyyy" autocomplete="off"></div>
       <div class="f-group f-full"><label>Phụ trách *</label><div class="ms-wrapper" id="ms-phutrach-container"></div></div>
+      <div class="f-group f-full"><label>Leader dự án</label><select id="da-leader"><option value="">— Chọn leader —</option></select></div>
       <div class="f-group f-full"><label>Link portal</label><input id="da-link" placeholder="https://..." autocomplete="off"></div>
       <div class="f-group f-full"><label>Mã xác nhận của phòng *</label><input id="da-matkhau" type="password" autocomplete="new-password"></div>
     </div>
@@ -256,6 +257,18 @@
       <button class="btn-xoa-viec" id="xoaViec" type="button" hidden title="Chỉ leader mới xóa được">🗑 Xóa</button>
       <span class="modal-msg" id="msgViec"></span>
       <button class="btn-submit" id="guiViec" type="button">Ghi vào Sheets</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalDangNhap" hidden>
+  <div class="modal modal-nhap" role="dialog" aria-labelledby="dnTitle">
+    <div class="modal-head"><h2 id="dnTitle">🔐 Đăng nhập hệ thống</h2></div>
+    <div style="padding:4px">
+      <div class="f-group f-full"><label>Tên của bạn</label><select id="dn-ten"><option value="">— Chọn tên —</option></select></div>
+      <div class="f-group f-full"><label>Mã PIN</label><input id="dn-pin" type="password" inputmode="numeric" autocomplete="off" placeholder="Nhập mã PIN"></div>
+      <p id="dn-msg" class="modal-msg"></p>
+      <div class="nhap-nut"><button type="button" class="btn-primary" id="dn-vao">Vào hệ thống</button></div>
     </div>
   </div>
 </div>
@@ -303,9 +316,10 @@
 
 <footer>
   <span id="footDonVi"></span>
+  <span id="footDangNhap"></span>
   <span>Nguồn dữ liệu: Google Sheets · Tự làm mới mỗi 5 phút</span>
 </footer>
 
-<script src="xuly.js?v=26"></script>
+<script src="xuly.js?v=27"></script>
 </body>
 </html>

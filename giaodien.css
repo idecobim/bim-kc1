@@ -430,3 +430,20 @@
   #lsO{width:100%;box-sizing:border-box;font-family:'Be Vietnam Pro',sans-serif;font-size:14px;line-height:1.5;border:1px solid var(--line);border-radius:6px;padding:10px 12px;background:var(--white);color:var(--ink);resize:vertical}
   #lsO:focus{outline:none;border-color:var(--orange)}
   @media(max-width:640px){ .toi-ls-nut{width:40px;height:40px;font-size:16px} }
+
+  /* ===================== PHÂN QUYỀN (đăng nhập / leader) ===================== */
+  /* Ẩn mặc định — chỉ hiện khi body có class .is-leader (super_admin HOẶC leader của dự án đang mở) */
+  .nut-mo-han, #ctx-p-del, .quyen-leader-tab{ display:none; }
+  #xoaViec{ display:none; }
+  body.is-leader .nut-mo-han{ display:inline-block; }
+  body.is-leader #xoaViec:not([hidden]){ display:inline-block; }
+  body.is-leader #ctx-p-del{ display:flex; }
+  body.is-leader .quyen-leader-tab{ display:inline-flex; }
+
+  /* Ẩn ô "Mã xác nhận" trong form (đã dùng PIN đăng nhập tự động) */
+  .f-group:has(#cv-matkhau), .f-group:has(#da-matkhau){ display:none; }
+
+  /* Modal đăng nhập */
+  #modalDangNhap .modal-nhap{ max-width:380px; }
+  #footDangNhap a{ color:var(--orange); text-decoration:none; }
+  #footDangNhap a:hover{ text-decoration:underline; }

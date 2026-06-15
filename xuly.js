@@ -128,7 +128,8 @@ function chuanHoaDong(row){
     phutrach: o['phu trach'] || o['nguoi phu trach'] || '',
     trangthai: o['trang thai'] || '',
     hannop: o['han nop'] || o['han'] || '',
-    link: o['link'] || o['link portal'] || '#'
+    link: o['link'] || o['link portal'] || '#',
+    leader: o['leader'] || o['leader du an'] || o['leader/quan ly'] || ''
   };
 }
 function chuanHoaViec(row){
@@ -246,6 +247,7 @@ function veDanhSach(){
         ${dongMeta('Giai đoạn', d.giaidoan)}
         ${dongMeta('Vai trò', d.vaitro)}
         ${dongMeta('Phụ trách', d.phutrach)}
+        ${d.leader ? dongMeta('Leader', d.leader) : ''}
         <span class="m-lbl">Trạng thái</span>
         <span>${d.trangthai ? '<span class="tt-chip ' + lopTrangThai(d.trangthai) + '">' + thoatHTML(d.trangthai) + '</span>' : '<span class="m-val trong">—</span>'}</span>
       </div>
@@ -469,7 +471,7 @@ $('ctx-p-edit').onclick = () => {
   $('guiDuAn').textContent = 'Lưu thay đổi';
   $('da-ma').value = d.ma; $('da-ten').value = d.ten; $('da-loai').value = d.loai;
   $('da-giaidoan').value = d.giaidoan; $('da-vaitro').value = d.vaitro;
-  setMultiSelect('da-phutrach', d.phutrach);
+  setMultiSelect('da-phutrach', d.phutrach); $('da-leader').value = d.leader || '';
   $('da-trangthai').value = d.trangthai || 'Đang triển khai';
   const fp = document.querySelector('#da-hannop')._flatpickr;
   if(fp) fp.setDate(d.hannop === '-' ? '' : d.hannop, false, 'd/m/Y'); else $('da-hannop').value = d.hannop === '-' ? '' : d.hannop;
@@ -586,10 +588,10 @@ async function guiLenSheets(type, data, matkhau, msgEl, nutEl){
 
 /* ====== Đóng modal ====== */
 document.querySelectorAll('[data-dong]').forEach(b=>{
-  b.addEventListener('click', e=>{ e.target.closest('.modal-overlay').hidden = true; moCuonNeuHetModal(); });
+  b.addEventListener('click', e=>{ e.target.closest('.modal-overlay').hidden = true; moCuonNeuHetModal(); if(typeof dongBoQuyen==='function') dongBoQuyen(); });
 });
 document.querySelectorAll('.modal-overlay').forEach(ov=>{
-  ov.addEventListener('click', e=>{ if(e.target===ov){ ov.hidden = true; moCuonNeuHetModal(); } });
+  ov.addEventListener('click', e=>{ if(e.target===ov && ov.id!=='modalDangNhap'){ ov.hidden = true; moCuonNeuHetModal(); if(typeof dongBoQuyen==='function') dongBoQuyen(); } });
 });
 
 /* ====== Multi-select nhân sự (khôi phục) ====== */
@@ -597,7 +599,7 @@ function taoMultiSelect(containerId, inputId){
   const c = $(containerId);
   if(!c) return;
   let html = '<div class="ms-header"><span id="' + inputId + '-text" style="opacity:0.6">Chọn nhân sự...</span> <span style="font-size:10px">▼</span></div><div class="ms-options">';
-  DANH_SACH_NHAN_SU.forEach(name => {
+  TEN_NHAN_SU.forEach(name => {
     html += '<label><input type="checkbox" value="' + thoatHTML(name) + '" class="' + inputId + '-cb"> ' + thoatHTML(name) + '</label>';
   });
   html += '</div><input type="hidden" id="' + inputId + '">';
@@ -637,6 +639,7 @@ $('luoiDuAn').addEventListener('click', e=>{
   const nutKanban = e.target.closest('[data-mokanban]');
   if(!nutKanban) return;
   madaKanbanHienTai = nutKanban.dataset.mokanban;
+  datQuyenTheoDuAn(madaKanbanHienTai);
   $('kanbanTitle').textContent = 'BẢNG CÔNG VIỆC: ' + madaKanbanHienTai;
   kFilter = { hangmuc: null, nguoi: null };
   chonUids.clear();
@@ -651,7 +654,7 @@ $('nutThemDuAn').addEventListener('click', ()=>{
   $('guiDuAn').textContent = 'Ghi vào Sheets';
   ['da-ma','da-ten','da-loai','da-giaidoan','da-vaitro','da-link'].forEach(id=>$(id).value='');
   const fp = document.querySelector('#da-hannop')._flatpickr; if(fp) fp.clear(); else $('da-hannop').value = '';
-  setMultiSelect('da-phutrach', '');
+  setMultiSelect('da-phutrach', ''); $('da-leader').value = '';
   $('da-matkhau').value = maXacNhanCache;
   $('msgDuAn').textContent = '';
   moOverlay('modalDuAn');
@@ -677,16 +680,16 @@ $('guiDuAn').addEventListener('click', async ()=>{
   const v = id => $(id).value.trim();
   const msg = $('msgDuAn');
   if(!v('da-ma') || !v('da-ten') || !v('da-phutrach')){ msg.className='modal-msg err'; msg.textContent='✖ Điền đủ Mã, Tên, Phụ trách'; return; }
-  if(!v('da-matkhau')){ msg.className='modal-msg err'; msg.textContent='✖ Nhập mã xác nhận của phòng'; return; }
   const duLieu = {
     magoc: maDangSua || '',
     ma:v('da-ma'), ten:v('da-ten'), loai:v('da-loai'), giaidoan:v('da-giaidoan'),
     vaitro:v('da-vaitro'), tiendo: tinhTienDo(maDangSua || v('da-ma')),
-    phutrach:v('da-phutrach'), trangthai:v('da-trangthai'), hannop:v('da-hannop')||'-', link:v('da-link')||'-'
+    phutrach:v('da-phutrach'), trangthai:v('da-trangthai'), hannop:v('da-hannop')||'-', link:v('da-link')||'-',
+    leader:v('da-leader')
   };
-  const ok = await guiLenSheets(maDangSua ? 'suaduan' : 'duan', duLieu, v('da-matkhau'), msg, $('guiDuAn'));
+  const ok = await guiLenSheets(maDangSua ? 'suaduan' : 'duan', duLieu, maGui(), msg, $('guiDuAn'));
   if(ok){
-    maXacNhanCache = v('da-matkhau'); lanGhiCuoi = Date.now();
+    lanGhiCuoi = Date.now();
     const moi = {...duLieu}; delete moi.magoc;
     if(maDangSua){
       const i = DU_AN.findIndex(d => d.ma === maDangSua);
@@ -701,7 +704,7 @@ $('guiDuAn').addEventListener('click', async ()=>{
       msg.textContent = '✔ Đã thêm!';
       ['da-ma','da-ten','da-giaidoan','da-link'].forEach(id=>$(id).value='');
       const fp = document.querySelector('#da-hannop')._flatpickr; if(fp) fp.clear();
-      setMultiSelect('da-phutrach', '');
+      setMultiSelect('da-phutrach', ''); $('da-leader').value = '';
     }
     veDanhSach(); dungBoLoc();
   }
@@ -710,15 +713,8 @@ $('guiDuAn').addEventListener('click', async ()=>{
 /* Xóa công việc — chỉ leader (gác bằng MÃ LEADER), đặt xa nút Lưu để tránh bấm nhầm */
 if($('xoaViec')) $('xoaViec').addEventListener('click', async ()=>{
   if(!gocDangSua) return;
-  if(!leaderMoKhoa){
-    const ma = await hoiNhap({ tieuDe:'🗑 Xóa công việc', nhan:'Thao tác xóa cần MÃ LEADER. Nhập mã để xác nhận:', giaTri:'', goiY:'Mã leader' });
-    if(ma===null) return;
-    if(!(typeof MA_LEADER!=='undefined' && ma.trim() && ma.trim()===String(MA_LEADER))){ baoToast('✖ Mã leader không đúng','err'); return; }
-    leaderMoKhoa = true; chamLeader();
-  }
   if(!confirm('Xóa hẳn công việc này khỏi Sheets? Không thể hoàn tác.')) return;
-  let mk = maXacNhanCache || prompt('Nhập mã xác nhận của phòng để xóa:');
-  if(!mk) return;
+  let mk = maGui(); if(!mk){ baoToast('✖ Hãy đăng nhập lại','err'); return; }
   const g = gocDangSua, msg = $('msgViec');
   msg.className='modal-msg'; msg.textContent='Đang xóa...';
   try{
@@ -756,9 +752,9 @@ $('guiViec').addEventListener('click', async ()=>{
     duLieuViec.nguoigoc = gocDangSua.nguoigoc;   /* danh tính gốc đã chụp lúc mở form */
     duLieuViec.phancapgoc = gocDangSua.phancapgoc || '';
   }
-  const ok = await guiLenSheets(dangSua ? 'suanhiemvu' : 'nhiemvu', duLieuViec, v('cv-matkhau'), msg, $('guiViec'));
+  const ok = await guiLenSheets(dangSua ? 'suanhiemvu' : 'nhiemvu', duLieuViec, maGui(), msg, $('guiViec'));
   if(ok){
-    nhoMaTrongPhien(v('cv-matkhau')); chamHoatDong(); lanGhiCuoi = Date.now();
+    nhoMaTrongPhien(maGui()); chamHoatDong(); lanGhiCuoi = Date.now();
     if(dangSua){
       /* cập nhật bản trong bộ nhớ: tìm theo uid, nếu lạc (do tải lại) thì tìm theo danh tính gốc */
       let nvGoc = NHIEM_VU.find(x => x.uid === uidDangSua)
@@ -785,11 +781,12 @@ $('oTimKiem').addEventListener('input', veDanhSach);
 $('nutLamMoi').addEventListener('click', taiDuLieu);
 
 taoMultiSelect('ms-phutrach-container', 'da-phutrach');
+(function(){ const sl=$('da-leader'); if(sl && typeof TEN_NHAN_SU!=='undefined') TEN_NHAN_SU.forEach(n=> sl.add(new Option(n,n))); })();
 /* Người chính (select) + Hỗ trợ (multi-select) */
 (function(){
   const sel = $('cv-nguoi-chinh');
-  if(sel && typeof DANH_SACH_NHAN_SU!=='undefined'){
-    DANH_SACH_NHAN_SU.forEach(n=> sel.add(new Option(n, n)));
+  if(sel && typeof TEN_NHAN_SU!=='undefined'){
+    TEN_NHAN_SU.forEach(n=> sel.add(new Option(n, n)));
   }
   taoMultiSelect('ms-nguoiho-container', 'cv-nguoiho');
 })();
@@ -842,14 +839,8 @@ function khoaHanForm(){
 }
 document.querySelectorAll('.nut-mo-han').forEach(b=>b.addEventListener('click', ()=>{
   if(leaderMoKhoa){ leaderMoKhoa = false; if(_henXoaLeader) clearTimeout(_henXoaLeader); khoaHanForm(); return; }
-  const ma = prompt('Nhập MÃ LEADER để chỉnh deadline:');
-  if(ma===null) return;
-  if(typeof MA_LEADER!=='undefined' && ma.trim() && ma.trim()===String(MA_LEADER)){
-    leaderMoKhoa = true; chamLeader(); khoaHanForm();
-    baoToast('🔓 Đã mở quyền chỉnh deadline (30 phút)','ok');
-  } else {
-    baoToast('✖ Mã leader không đúng','err');
-  }
+  leaderMoKhoa = true; chamLeader(); khoaHanForm();
+  baoToast('🔓 Đã mở để chỉnh deadline','ok');
 }));
 khoaHanForm();   /* trạng thái ban đầu: khóa */
 
@@ -1088,7 +1079,7 @@ function veViecCuaToi(){
   const selT = $('toiNguoi');
   if(selT.dataset.loaded !== '1'){
     const ds = [...new Set(
-      (typeof DANH_SACH_NHAN_SU!=='undefined' ? DANH_SACH_NHAN_SU : [])
+      (typeof TEN_NHAN_SU!=='undefined' ? TEN_NHAN_SU : [])
       .concat(NHIEM_VU.flatMap(v=>v.nguoi.split(',').map(s=>s.trim())))
       .filter(Boolean))].sort();
     ds.forEach(n=>selT.add(new Option(n,n)));
@@ -1657,6 +1648,64 @@ $('cbChiTiet').addEventListener('click', e=>{
   const d = e.target.closest('[data-cbuid]'); if(!d) return;
   moFormSuaViec(Number(d.dataset.cbuid));
 });
+/* ===================== ĐĂNG NHẬP & PHÂN QUYỀN ===================== */
+let nguoiDangNhap = null;   /* {ten, pin, role} */
+function timNguoiDung(ten){ return (typeof DANH_SACH_NHAN_SU!=='undefined') ? (DANH_SACH_NHAN_SU.find(u=>u.ten===ten) || null) : null; }
+function laAdmin(){ return !!(nguoiDangNhap && nguoiDangNhap.role==='super_admin'); }
+function maGui(){ return nguoiDangNhap ? String(nguoiDangNhap.pin) : (maXacNhanCache||''); }
+function laLeaderCuaDuAn(mada){
+  if(laAdmin()) return true;
+  if(!nguoiDangNhap) return false;
+  const da = DU_AN.find(d=>d.ma===mada);
+  return !!(da && da.leader && String(da.leader).trim()===nguoiDangNhap.ten);
+}
+function datQuyenTheoDuAn(mada){ document.body.classList.toggle('is-leader', laLeaderCuaDuAn(mada)); }
+function capNhatQuyen(){ document.body.classList.toggle('is-leader', laAdmin()); }
+function dongBoQuyen(){
+  if(!$('modalKanban').hidden && madaKanbanHienTai) datQuyenTheoDuAn(madaKanbanHienTai);
+  else capNhatQuyen();
+}
+function ketThucDangNhap(){
+  $('modalDangNhap').hidden = true; moCuonNeuHetModal();
+  maXacNhanCache = String(nguoiDangNhap.pin);
+  capNhatQuyen();
+  const fn = $('footDangNhap');
+  if(fn){ fn.innerHTML = '· 👤 ' + thoatHTML(nguoiDangNhap.ten) + ' (' + (laAdmin()?'quản trị':'nhân viên') + ') · <a href="#" id="dangXuat">Đăng xuất</a>';
+    const dx = $('dangXuat'); if(dx) dx.addEventListener('click', e=>{ e.preventDefault(); dangXuat(); }); }
+  if(!nguoiCuaToi){ nguoiCuaToi = nguoiDangNhap.ten; try{ localStorage.setItem('nguoiCuaToi', nguoiCuaToi); }catch(e){} }
+}
+function dangNhap(){
+  const u = timNguoiDung($('dn-ten').value);
+  const pin = $('dn-pin').value.trim();
+  const msg = $('dn-msg');
+  if(!u){ msg.className='modal-msg err'; msg.textContent='✖ Hãy chọn tên của bạn'; return; }
+  if(!pin || pin!==String(u.pin)){ msg.className='modal-msg err'; msg.textContent='✖ Mã PIN không đúng'; return; }
+  nguoiDangNhap = { ten:u.ten, pin:u.pin, role:u.role };
+  try{ localStorage.setItem('phienDangNhap', JSON.stringify({ ten:u.ten, pin:u.pin })); }catch(e){}
+  $('dn-pin').value=''; msg.textContent='';
+  ketThucDangNhap();
+  veDanhSach(); veViewPhu();
+}
+function dangXuat(){
+  nguoiDangNhap=null; maXacNhanCache='';
+  try{ localStorage.removeItem('phienDangNhap'); }catch(e){}
+  document.body.classList.remove('is-leader');
+  const fn=$('footDangNhap'); if(fn) fn.textContent='';
+  moOverlay('modalDangNhap');
+}
+(function khoiDongDangNhap(){
+  const sel = $('dn-ten');
+  if(sel && typeof DANH_SACH_NHAN_SU!=='undefined') DANH_SACH_NHAN_SU.forEach(u=> sel.add(new Option(u.ten, u.ten)));
+  try{ const s = JSON.parse(localStorage.getItem('phienDangNhap')||'null');
+    const u = s && timNguoiDung(s.ten);
+    if(u && String(u.pin)===String(s.pin)){ nguoiDangNhap = { ten:u.ten, pin:u.pin, role:u.role }; }
+  }catch(e){}
+  if(nguoiDangNhap) ketThucDangNhap();
+  else moOverlay('modalDangNhap');
+  if($('dn-vao')) $('dn-vao').addEventListener('click', dangNhap);
+  if($('dn-pin')) $('dn-pin').addEventListener('keydown', e=>{ if(e.key==='Enter') dangNhap(); });
+})();
+
 taiDuLieu();
 setInterval(()=>{
   if(Date.now() - lanGhiCuoi <= 6*60*1000) return;
