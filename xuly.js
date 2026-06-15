@@ -1087,14 +1087,24 @@ function sapXepDuAn(maList, viecTheoDA){
 
 function veViecCuaToi(){
   const selT = $('toiNguoi');
-  if(selT.dataset.loaded !== '1'){
-    const ds = [...new Set(
-      (typeof TEN_NHAN_SU!=='undefined' ? TEN_NHAN_SU : [])
-      .concat(NHIEM_VU.flatMap(v=>v.nguoi.split(',').map(s=>s.trim())))
-      .filter(Boolean))].sort();
+  const scope = nguoiDangNhap ? (nguoiDangNhap.ten+'|'+nguoiDangNhap.role) : '';
+  if(selT.dataset.scope !== scope){
+    let ds;
+    if(laAdmin()){
+      ds = [...new Set((typeof TEN_NHAN_SU!=='undefined'?TEN_NHAN_SU:[])
+        .concat(NHIEM_VU.flatMap(v=>v.nguoi.split(',').map(s=>s.trim()))).filter(Boolean))].sort();
+    } else if(laQuanLyChung()){
+      const set = new Set(nguoiDangNhap ? [nguoiDangNhap.ten] : []);
+      NHIEM_VU.forEach(v=>{ if(laLeaderCuaDuAn(v.mada)) v.nguoi.split(',').map(s=>s.trim()).forEach(n=>{ if(n) set.add(n); }); });
+      ds = [...set].sort();
+    } else {
+      ds = nguoiDangNhap ? [nguoiDangNhap.ten] : [];
+    }
+    selT.innerHTML = '<option value="">— Chọn tên —</option>';
     ds.forEach(n=>selT.add(new Option(n,n)));
-    selT.dataset.loaded = '1';
-    if(nguoiCuaToi) selT.value = nguoiCuaToi;
+    selT.dataset.scope = scope;
+    if(nguoiCuaToi && ds.includes(nguoiCuaToi)) selT.value = nguoiCuaToi;
+    else if(nguoiDangNhap){ selT.value = nguoiDangNhap.ten; }
   }
   if($('toiCheDo')){ $('toiCheDo').dataset.mode = cheDoToi; $('toiCheDo').innerHTML = (cheDoToi==='cay' ? '🌳 Cây dự án' : '☰ Danh sách'); }
   const anXongToi = $('toiAnXong') && $('toiAnXong').getAttribute('aria-pressed')==='true';
@@ -1111,7 +1121,7 @@ function veViecCuaToi(){
   const wrap = $('toiNoiDung');
   if(!nguoiCuaToi){ wrap.innerHTML = '<div class="th-empty">Chọn tên bạn ở trên để xem việc được giao.</div>'; if($('toiLocDA')) $('toiLocDA').innerHTML='<option value="">Tất cả dự án</option>'; return; }
 
-  let viec = NHIEM_VU.filter(v => v.nguoi.split(',').map(s=>s.trim()).includes(nguoiCuaToi) && xemDuocDuAn(v.mada));
+  let viec = NHIEM_VU.filter(v => v.nguoi.split(",").map(s=>s.trim()).includes(nguoiCuaToi) && xemDuocViecTab3(v.mada));
   if(!viec.length){ wrap.innerHTML = '<div class="th-empty">Không có việc nào giao cho '+thoatHTML(nguoiCuaToi)+'.</div>'; if($('toiLocDA')) $('toiLocDA').innerHTML='<option value="">Tất cả dự án</option>'; return; }
 
   /* phát hiện việc MỚI chưa xem (1 lần/phiên cho mỗi người) */
@@ -1525,7 +1535,7 @@ function baoCaoPhong(){
 
 function baoCaoCuaToi(){
   if(!nguoiCuaToi) return 'Hãy chọn tên ở tab "Việc của tôi" trước khi tạo báo cáo.';
-  let viec = NHIEM_VU.filter(v => v.nguoi.split(',').map(s=>s.trim()).includes(nguoiCuaToi) && xemDuocDuAn(v.mada));
+  let viec = NHIEM_VU.filter(v => v.nguoi.split(",").map(s=>s.trim()).includes(nguoiCuaToi) && xemDuocViecTab3(v.mada));
   const locDA = $('toiLocDA') ? $('toiLocDA').value : '';
   if(locDA) viec = viec.filter(v=>v.mada===locDA);
   const L = [];
@@ -1724,6 +1734,13 @@ function thamGiaDuAn(mada){
   return NHIEM_VU.some(v=>v.mada===mada && v.nguoi.split(',').map(s=>s.trim()).includes(ten));
 }
 function xemDuocDuAn(mada){ return thamGiaDuAn(mada); }
+/* Tab 3: được xem việc này không — xem CHÍNH MÌNH thì theo dự án tham gia; xem NGƯỜI KHÁC chỉ trong dự án mình LÀM LEADER (admin xem tất cả) */
+function xemDuocViecTab3(mada){
+  if(laAdmin()) return true;
+  if(!nguoiDangNhap) return false;
+  if(nguoiCuaToi === nguoiDangNhap.ten) return xemDuocDuAn(mada);
+  return laLeaderCuaDuAn(mada);
+}
 /* Được xem việc của người khác (Tab 3) = admin hoặc đang là leader của ít nhất 1 dự án */
 function laQuanLyChung(){ return laAdmin() || (!!nguoiDangNhap && DU_AN.some(d=>dsLeader(d).includes(nguoiDangNhap.ten))); }
 /* #1: chỉ super_admin sửa Leader. #2: super_admin hoặc leader của dự án mới sửa Phụ trách */
