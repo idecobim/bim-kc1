@@ -156,7 +156,7 @@ async function taiNhiemVu(){
     const res = await fetch(noiCache(LINK_CSV_NHIEMVU));
     if(res.ok){
       const kq = Papa.parse(await res.text(), {header:true, skipEmptyLines:true});
-      NHIEM_VU = kq.data.map(chuanHoaViec).filter(v => v.mada && (v.nhiemvu || v.phancap));
+      NHIEM_VU = kq.data.map(chuanHoaViec).filter(v => v.mada && (v.nhiemvu || v.phancap || v.nguoi));
     }
   }catch(e){ /* không sao */ }
 }
@@ -742,8 +742,10 @@ $('guiViec').addEventListener('click', async ()=>{
   if(!v('cv-matkhau')){ msg.className='modal-msg err'; msg.textContent='✖ Nhập mã xác nhận của phòng'; return; }
 
   const dangSua = !!gocDangSua;
+  const nvHienTai = dangSua ? (NHIEM_VU.find(x => x.uid === uidDangSua)
+      || NHIEM_VU.find(x => x.mada===gocDangSua.mada && (x.nhiemvu||'')===(gocDangSua.nvgoc||'') && x.nguoi===gocDangSua.nguoigoc && (x.phancap||'')===(gocDangSua.phancapgoc||''))) : null;
   const duLieuViec = {
-    mada:v('cv-mada'), phancap:v('cv-phancap'), hangmuc:'', nhiemvu:v('cv-nhiemvu'), nguoi:ghepNguoi(),
+    mada:v('cv-mada'), phancap:v('cv-phancap'), hangmuc:(nvHienTai?(nvHienTai.hangmuc||''):''), nhiemvu:v('cv-nhiemvu'), nguoi:ghepNguoi(),
     uutien:v('cv-uutien'), han:v('cv-han')||'-', trangthai:v('cv-trangthai'), ghichu:v('cv-ghichu'), vuongmac:v('cv-vuongmac'), tamngung:v('cv-tamngung')
   };
   if(dangSua){
@@ -1244,7 +1246,7 @@ function dongViecToi(v){
       + (laMoi(v)?'<span class="badge-moi">• Mới</span>':'') + badgeHT + '<span class="toi-tenviec">'+thoatHTML(tenViec)+'</span>'+hanTxt+cung+vm+tn+'</div>'
     + '<button class="toi-pill" type="button" data-ttpick="'+v.uid+'" style="color:'+pillCol+';border-color:'+pillCol+'" title="Bấm để đổi trạng thái">'+pillTxt+'</button>'
     + '<button class="toi-vm-nut'+(v.vuongmac?' on':'')+'" type="button" data-vm="'+v.uid+'" title="Báo/gỡ vướng mắc">⚠</button>'
-    + '<button class="toi-tn-nut'+(dangNgung(v)?' on':'')+'" type="button" data-tn="'+v.uid+'" title="Tạm ngưng / bỏ tạm ngưng">⏸</button></div>';
+    + '<button class="toi-tn-nut'+(dangNgung(v)?' on':'')+'" type="button" data-tn="'+v.uid+'" title="'+(dangNgung(v)?'Tiếp tục công việc':'Tạm ngưng công việc')+'">'+(dangNgung(v)?'▶':'⏸')+'</button></div>';
 }
 function viecTrong(node){ let a=node.viec.slice(); node.con.forEach(c=>a=a.concat(viecTrong(c))); return a; }
 function dongLaToi(ten, v, depth){
