@@ -86,11 +86,31 @@ function soSanhTuNhien(a, b){
   if((ra!==null) !== (rb!==null)) return ra!==null ? -1 : 1;  /* mục La Mã đứng trước mục chữ thường */
   return String(a||'').localeCompare(String(b||''), 'vi', { numeric:true, sensitivity:'base' });
 }
+/* ===== Cache tăng tốc (dựng lại mỗi lần vẽ — không giữ qua thao tác nên không bị cũ) ===== */
+let _mapDA = new Map();          /* mã -> dự án */
+let _segViec = new Map();        /* mã -> [việc] */
+let _cacheTD = new Map();        /* mã -> tiến độ % */
+let _setCoViec = new Set();      /* mã dự án mà người đăng nhập có việc */
+function chuanBiCache(){
+  _mapDA = new Map(); _segViec = new Map(); _cacheTD = new Map(); _setCoViec = new Set();
+  for(const d of DU_AN) _mapDA.set(d.ma, d);
+  const ten = nguoiDangNhap ? nguoiDangNhap.ten : null;
+  for(const v of NHIEM_VU){
+    if(!_segViec.has(v.mada)) _segViec.set(v.mada, []);
+    _segViec.get(v.mada).push(v);
+    if(ten && v.nguoi.split(',').map(s=>s.trim()).includes(ten)) _setCoViec.add(v.mada);
+  }
+  for(const [ma, arr] of _segViec){
+    const act = arr.filter(v=>!dangNgung(v));
+    _cacheTD.set(ma, act.length ? Math.round(act.reduce((s,v)=>s+pctTrangThai(v.trangthai),0)/act.length) : 0);
+  }
+}
+function timDA(ma){ return _mapDA.get(ma) || DU_AN.find(d=>d.ma===ma) || null; }
 function tinhTienDo(mada){
+  if(_cacheTD.has(mada)) return _cacheTD.get(mada);
   const viec = NHIEM_VU.filter(v => v.mada === mada && !dangNgung(v));
   if(viec.length === 0) return 0;
-  const tong = viec.reduce((s,v)=>s+pctTrangThai(v.trangthai),0);
-  return Math.round(tong / viec.length);
+  return Math.round(viec.reduce((s,v)=>s+pctTrangThai(v.trangthai),0) / viec.length);
 }
 function chuanCot(tt){
   const COT = ['Chưa bắt đầu','Đang thực hiện / Chỉnh sửa','Trình duyệt KCS / TT','Hoàn thành'];
@@ -204,6 +224,7 @@ function dongMeta(nhan, giaTri){
   return '<span class="m-lbl">' + nhan + '</span><span class="m-val' + (co ? '' : ' trong') + '">' + (co ? thoatHTML(giaTri) : '—') + '</span>';
 }
 function veDanhSach(){
+  chuanBiCache();
   const kw = boDau($('oTimKiem').value), l = $('locLoai').value, g = $('locGiaiDoan').value, t = $('locTrangThai').value, sx = $('sapXep').value;
   let ds = DU_AN.filter(d =>
     xemDuocDuAn(d.ma) &&
@@ -922,9 +943,12 @@ function dungCay(){
   return root;
 }
 /* tất cả việc nằm trong 1 nhánh (kể cả con cháu) */
+let _caySub = new WeakMap();
 function viecCuaNhanh(node){
+  if(_caySub.has(node)) return _caySub.get(node);
   let arr = node.viec.slice();
   node.con.forEach(c=> arr = arr.concat(viecCuaNhanh(c)));
+  _caySub.set(node, arr);
   return arr;
 }
 function pctCay(node){
@@ -942,6 +966,7 @@ function vietKhop(v, fNguoi, fText){
   return okN && okT;
 }
 function veTongHop(){
+  chuanBiCache();
   const fNguoi = $('thNguoi').value;
   const fText = boDau($('thTim').value);
   window._anXongCay = $('thAnXong') && $('thAnXong').getAttribute('aria-pressed')==='true';
@@ -1086,6 +1111,7 @@ function sapXepDuAn(maList, viecTheoDA){
 }
 
 function veViecCuaToi(){
+  chuanBiCache();
   const selT = $('toiNguoi');
   const scope = nguoiDangNhap ? (nguoiDangNhap.ten+'|'+nguoiDangNhap.role) : '';
   if(selT.dataset.scope !== scope){
@@ -1275,7 +1301,7 @@ function dongViecToi(v){
     + '<button class="toi-ls-nut" type="button" data-ls="'+v.uid+'" title="Lịch sử / Soát xét">💬'+(soLichSu(v)?'<span class="ls-dem">'+soLichSu(v)+'</span>':'')+'</button>'
     + '<button class="toi-tn-nut'+(dangNgung(v)?' on':'')+'" type="button" data-tn="'+v.uid+'" title="'+(dangNgung(v)?'Tiếp tục công việc':'Tạm ngưng công việc')+'">'+(dangNgung(v)?'▶':'⏸')+'</button></div>';
 }
-function viecTrong(node){ let a=node.viec.slice(); node.con.forEach(c=>a=a.concat(viecTrong(c))); return a; }
+function viecTrong(node){ return viecCuaNhanh(node); }
 function viecDangTreHan(v){ if(dangNgung(v) || chuanCot(v.trangthai)==='Hoàn thành') return false; const n=soNgayConLai(docNgay(v.han)); return n!==null && n<0; }
 function xemViecCanhBao(v){ return laAdmin() || laLeaderCuaDuAn(v.mada) || (!!nguoiDangNhap && v.nguoi.split(',').map(s=>s.trim()).includes(nguoiDangNhap.ten)); }
 function demCanhBaoNhanh(node){
@@ -1501,6 +1527,7 @@ function tenViecNgan(v){ return v.nhiemvu || (tachCap(v.phancap).slice(-1)[0]) |
 function moBaoCao(text){ $('bcNoiDung').value = text; moOverlay('modalBaoCao'); $('bcNoiDung').scrollTop = 0; }
 
 function baoCaoPhong(){
+  chuanBiCache();
   const L = [];
   const DA = DU_AN.filter(d=>xemDuocDuAn(d.ma));
   const NV = NHIEM_VU.filter(v=>xemDuocDuAn(v.mada));
@@ -1654,6 +1681,7 @@ if($('lsThem')) $('lsThem').addEventListener('click', ()=>{
 });
 
 function dsTreHan(){
+  chuanBiCache();
   const out = [];
   const me = nguoiDangNhap ? nguoiDangNhap.ten : '';
   NHIEM_VU.forEach(v=>{
@@ -1708,7 +1736,7 @@ function dsLeader(da){ return (da && da.leader ? String(da.leader) : '').split('
 function laLeaderCuaDuAn(mada){
   if(laAdmin()) return true;
   if(!nguoiDangNhap) return false;
-  const da = DU_AN.find(d=>d.ma===mada);
+  const da = timDA(mada);
   return !!(da && dsLeader(da).includes(nguoiDangNhap.ten));
 }
 /* Khóa (làm xám + chặn bấm) một ô native hoặc multi-select */
@@ -1726,12 +1754,12 @@ function thamGiaDuAn(mada){
   if(laAdmin()) return true;
   if(!nguoiDangNhap) return false;
   const ten = nguoiDangNhap.ten;
-  const da = DU_AN.find(d=>d.ma===mada);
+  const da = timDA(mada);
   if(da){
     if(dsLeader(da).includes(ten)) return true;
     if(String(da.phutrach||'').split(',').map(s=>s.trim()).includes(ten)) return true;
   }
-  return NHIEM_VU.some(v=>v.mada===mada && v.nguoi.split(',').map(s=>s.trim()).includes(ten));
+  return _setCoViec.has(mada) || NHIEM_VU.some(v=>v.mada===mada && v.nguoi.split(',').map(s=>s.trim()).includes(ten));
 }
 function xemDuocDuAn(mada){ return thamGiaDuAn(mada); }
 /* Tab 3: được xem việc này không — xem CHÍNH MÌNH thì theo dự án tham gia; xem NGƯỜI KHÁC chỉ trong dự án mình LÀM LEADER (admin xem tất cả) */
