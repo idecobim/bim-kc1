@@ -553,6 +553,7 @@ function moFormSuaViec(uid){
   $('guiViec').textContent = 'Lưu cập nhật';
   $('cv-mada').value = nv.mada;
   $('cv-phancap').value = nv.phancap || '';
+  if(typeof setupMauForm==='function') setupMauForm(true);   /* việc cũ: mặc định Tự do, giữ nguyên */
   $('cv-nhiemvu').value = nv.nhiemvu;
   datNguoiForm(nv.nguoi);
   apQuyenFormViec(nv.mada);
@@ -711,6 +712,7 @@ $('btnGiaoViecKanban').addEventListener('click', ()=>{
   $('guiViec').textContent = 'Ghi vào Sheets';
   $('cv-mada').value = madaKanbanHienTai || '';
   ['cv-phancap','cv-nhiemvu','cv-ghichu','cv-vuongmac','cv-tamngung'].forEach(id=>$(id).value='');
+  if(typeof setupMauForm==='function') setupMauForm(false);   /* tạo mới: áp khuôn mẫu nếu dự án có */
   $('cv-uutien').value = 'Trung bình';
   $('cv-trangthai').value = 'Chưa bắt đầu';
   const fp = document.querySelector('#cv-han')._flatpickr; if(fp) fp.clear(); else $('cv-han').value = '';
@@ -833,6 +835,7 @@ $('guiViec').addEventListener('click', async ()=>{
     NHIEM_VU.push({ uid: ++demUid, ...duLieuViec });
     msg.textContent = '✔ Đã giao việc!';
     ['cv-phancap','cv-nhiemvu','cv-ghichu','cv-vuongmac','cv-tamngung'].forEach(id=>$(id).value='');
+    if(typeof setupMauForm==='function') setupMauForm(false);   /* dựng lại khuôn cho việc kế tiếp */
     const fp = document.querySelector('#cv-han')._flatpickr; if(fp) fp.clear();
     datNguoiForm('');
     veDanhSach(); if(!$('modalKanban').hidden) veKanban(); veViewPhu();
@@ -1114,71 +1117,55 @@ async function xoaMau(m){
   }catch(e){ baoToast('✖ '+e.message,'err'); }
 }
 
-/* ---------- TẠO CÔNG VIỆC THEO MẪU ---------- */
-function moTaoTheoMau(mada){
-  _mauMada = mada;
-  const ds = mauCuaDuAn(mada);
-  if(!ds.length){ baoToast('Dự án chưa có mẫu — nhờ super_admin cấu hình','err'); return; }
-  $('tmTitle').textContent = 'Tạo theo mẫu — ' + mada;
-  $('tm-mausel').innerHTML = ds.map((m,i)=>'<option value="'+i+'">'+thoatHTML(m.ten)+'</option>').join('');
-  const dsNguoi = (typeof TEN_NHAN_SU!=='undefined'?TEN_NHAN_SU:[]);
-  $('tm-nguoi').innerHTML = '<option value="">— Chọn người —</option>' + dsNguoi.map(n=>'<option>'+thoatHTML(n)+'</option>').join('');
-  veFormTaoMau();
-  moOverlay('modalTaoMau');
+/* ---------- DÙNG MẪU LÀM KHUÔN CHO FORM GIAO VIỆC (mỗi lần 1 việc) ---------- */
+/* isEdit=true (sửa việc cũ) → mặc định Tự do, giữ nguyên Phân cấp cũ */
+function setupMauForm(isEdit){
+  const grp=$('cv-mau-group'), sel=$('cv-mau'), box=$('cv-mau-fields');
+  if(!grp || !sel){ return; }
+  const ds = mauCuaDuAn($('cv-mada').value);
+  if(!ds.length){ grp.hidden=true; box.hidden=true; box.innerHTML=''; datPhancapTuDo(true); return; }
+  grp.hidden=false;
+  sel.innerHTML = '<option value="__free">— Tự do (gõ tay) —</option>'
+    + ds.map((m,i)=>'<option value="'+i+'">'+thoatHTML(m.ten)+'</option>').join('');
+  sel.value = isEdit ? '__free' : '0';   /* tạo mới: dùng mẫu đầu tiên làm khuôn; sửa: tự do */
+  apMauForm();
 }
-function mauDangChon(){ return mauCuaDuAn(_mauMada)[ +($('tm-mausel').value||0) ]; }
-function thuInputs(){ const o={}; $('tm-inputs').querySelectorAll('[data-tmin]').forEach(inp=>o[inp.dataset.tmin]=inp.value); return o; }
-function genPaths(levels, inputs){
-  let paths=[[]];
-  levels.forEach(l=>{
-    if(l.t==='fixed'){ const val=String(l.v||'').trim(); paths=paths.map(p=> val? p.concat(val): p.slice()); }
-    else if(l.t==='input'){ const val=(inputs[l.v]||'').trim(); paths=paths.map(p=> p.concat(val||('⟨'+l.v+'⟩'))); }
-    else { const arr=String(l.v).split(',').map(s=>s.trim()).filter(Boolean); const opts=arr.length?arr:['']; const np=[]; paths.forEach(p=>opts.forEach(o=>np.push(o? p.concat(o): p.slice()))); paths=np; }
+function apMauForm(){
+  const sel=$('cv-mau'), box=$('cv-mau-fields');
+  if(sel.value==='__free'){ box.hidden=true; box.innerHTML=''; datPhancapTuDo(true); return; }
+  const m = mauCuaDuAn($('cv-mada').value)[+sel.value];
+  if(!m){ box.hidden=true; box.innerHTML=''; datPhancapTuDo(true); return; }
+  box.hidden=false;
+  box.innerHTML = m.levels.map((l,i)=>{
+    if(l.t==='fixed') return '<div class="f-group" style="margin-bottom:6px"><label>Tầng '+(i+1)+' · cố định</label><div style="font-size:14px;padding:6px 0;color:var(--ink)">'+thoatHTML(l.v||'')+'</div></div>';
+    if(l.t==='input') return '<div class="f-group" style="margin-bottom:6px"><label>'+thoatHTML(l.v||('Tầng '+(i+1)))+'</label><input data-mauf="'+i+'" placeholder="'+thoatHTML(l.v||'')+'" autocomplete="off"></div>';
+    const arr=String(l.v).split(',').map(s=>s.trim()).filter(Boolean);
+    return '<div class="f-group" style="margin-bottom:6px"><label>Tầng '+(i+1)+' · chọn 1</label><select data-mauf="'+i+'">'+arr.map(o=>'<option>'+thoatHTML(o)+'</option>').join('')+'</select></div>';
+  }).join('');
+  box.querySelectorAll('input[data-mauf]').forEach(el=>el.addEventListener('input', ghepPhancapTuMau));
+  box.querySelectorAll('select[data-mauf]').forEach(el=>el.addEventListener('change', ghepPhancapTuMau));
+  datPhancapTuDo(false);
+  ghepPhancapTuMau();
+}
+function ghepPhancapTuMau(){
+  const sel=$('cv-mau'); const m=mauCuaDuAn($('cv-mada').value)[+sel.value]; if(!m) return;
+  const box=$('cv-mau-fields'), segs=[];
+  m.levels.forEach((l,i)=>{
+    if(l.t==='fixed'){ if(String(l.v||'').trim()) segs.push(l.v.trim()); }
+    else { const el=box.querySelector('[data-mauf="'+i+'"]'); const val=el?String(el.value).trim():''; if(val) segs.push(val); }
   });
-  return paths;
+  $('cv-phancap').value = segs.join(' / ');
 }
-function veFormTaoMau(){
-  const m=mauDangChon(); if(!m) return;
-  const inputs=m.levels.filter(l=>l.t==='input');
-  $('tm-inputs').innerHTML = inputs.length ? inputs.map(l=>'<label style="display:block;font-size:11px;color:var(--concrete);margin:0 0 4px">'+thoatHTML(l.v)+'</label><input data-tmin="'+thoatHTML(l.v)+'" placeholder="'+thoatHTML(l.v)+'" style="width:100%;margin-bottom:10px">').join('')
-    : '<div style="font-size:12px;color:var(--concrete);margin-bottom:8px">Mẫu này không cần nhập thêm.</div>';
-  $('tm-inputs').querySelectorAll('[data-tmin]').forEach(inp=>inp.addEventListener('input',veXemTruocTaoMau));
-  veXemTruocTaoMau();
+function datPhancapTuDo(tuDo){
+  const inp=$('cv-phancap'); if(!inp) return;
+  inp.readOnly = !tuDo;
+  inp.style.background = tuDo ? '' : 'var(--paper)';
+  inp.style.opacity = tuDo ? '' : '.7';
+  inp.title = tuDo ? '' : 'Ô này do khuôn mẫu tự ghép — chọn "Tự do" nếu muốn gõ tay';
 }
-function veXemTruocTaoMau(){
-  const m=mauDangChon(); if(!m) return;
-  const paths=genPaths(m.levels, thuInputs());
-  $('tm-count').textContent=paths.length;
-  $('tm-prev').innerHTML = paths.map(p=>'<div>'+p.map(thoatHTML).join('  <span style="color:var(--line)">/</span>  ')+'</div>').join('');
-}
-if($('tm-mausel')) $('tm-mausel').addEventListener('change', veFormTaoMau);
-if($('tm-tao'))    $('tm-tao').addEventListener('click', taoLoatViec);
-async function taoLoatViec(){
-  const m=mauDangChon(); if(!m) return;
-  const nguoi=$('tm-nguoi').value;
-  const inputs=thuInputs();
-  for(const l of m.levels){ if(l.t==='input' && !(inputs[l.v]||'').trim()){ baoToast('Nhập "'+l.v+'"','err'); return; } }
-  const paths=genPaths(m.levels, inputs);
-  const items=paths.map(p=>({
-    mada:_mauMada, phancap:p.join(' / '), hangmuc:'', nhiemvu:p[p.length-1]||'', nguoi:nguoi||'',
-    uutien:'', han:'-', trangthai:'Chưa bắt đầu', ghichu:'', vuongmac:'', tamngung:''
-  }));
-  const btn=$('tm-tao'); btn.disabled=true;
-  try{
-    const res=await fetch(LINK_APPS_SCRIPT,{method:'POST',body:JSON.stringify({type:'themnhieuviec',matkhau:maGui(),data:{items}})});
-    const kq=await res.json();
-    if(kq.ok){
-      nhoMaTrongPhien(maGui()); chamHoatDong(); lanGhiCuoi=Date.now();
-      items.forEach(it=> NHIEM_VU.push({uid: ++demUid, ...it}));
-      baoToast('✔ Đã tạo '+items.length+' công việc','ok');
-      $('modalTaoMau').hidden=true; moCuonNeuHetModal();
-      veDanhSach(); if(!$('modalKanban').hidden) veKanban(); if($('modalSoDo')&&!$('modalSoDo').hidden) veSoDo(); veViewPhu();
-    } else baoToast('✖ '+(kq.loi||'Lỗi'),'err');
-  }catch(e){ baoToast('✖ '+e.message,'err'); }
-  finally{ btn.disabled=false; }
-}
-if($('btnTaoMau'))    $('btnTaoMau').addEventListener('click', ()=>{ if(madaKanbanHienTai) moTaoTheoMau(madaKanbanHienTai); });
+if($('cv-mau')) $('cv-mau').addEventListener('change', apMauForm);
 if($('btnQuanLyMau')) $('btnQuanLyMau').addEventListener('click', ()=>{ if(madaKanbanHienTai) moQuanLyMau(madaKanbanHienTai); });
+
 
 /* Chuyển màn hình */
 function doiView(v){
