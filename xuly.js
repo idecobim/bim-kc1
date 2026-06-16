@@ -171,27 +171,19 @@ function chuanHoaViec(row){
   };
 }
 
-/* ====== Tải dữ liệu ====== */
-async function taiNhiemVu(){
-  if(!LINK_CSV_NHIEMVU || LINK_CSV_NHIEMVU.includes('DÁN_LINK')) return;
-  try{
-    const res = await fetch(noiCache(LINK_CSV_NHIEMVU));
-    if(res.ok){
-      const kq = Papa.parse(await res.text(), {header:true, skipEmptyLines:true});
-      NHIEM_VU = kq.data.map(chuanHoaViec).filter(v => v.mada && (v.nhiemvu || v.phancap || v.nguoi));
-    }
-  }catch(e){ /* không sao */ }
-}
+/* ====== Tải dữ liệu (PA2: đọc TRỰC TIẾP qua Apps Script doGet — dữ liệu LIVE, không còn cache CSV) ====== */
 async function taiDuLieu(){
-  if(!LINK_CSV || LINK_CSV.includes('DÁN_LINK')) return;
-  $('khuNoiDung').innerHTML = '<div class="loading">ĐANG ĐỒNG BỘ DỮ LIỆU TỪ GOOGLE SHEETS<div class="bar"></div></div>';
+  if(!LINK_APPS_SCRIPT || LINK_APPS_SCRIPT.includes('DÁN_LINK')) return;
+  $('khuNoiDung').innerHTML = '<div class="loading">ĐANG ĐỒNG BỘ TRỰC TIẾP TỪ GOOGLE SHEETS<div class="bar"></div></div>';
   try{
-    const res = await fetch(noiCache(LINK_CSV));
+    /* 1 request lấy cả dự án + công việc, đọc thẳng từ Sheet sống (không qua link /pub bị cache) */
+    const res = await fetch(noiCache(LINK_APPS_SCRIPT));
     if(!res.ok) throw new Error('HTTP ' + res.status);
-    const kq = Papa.parse(await res.text(), {header:true, skipEmptyLines:true});
-    DU_AN = kq.data.map(chuanHoaDong).filter(d => d.ten || d.ma);
-    if(DU_AN.length === 0) throw new Error('Bảng tính trống hoặc sai tiêu đề cột');
-    await taiNhiemVu();
+    const kq = await res.json();
+    if(!kq || !kq.ok) throw new Error((kq && kq.loi) || 'Apps Script không trả dữ liệu');
+    DU_AN    = (kq.duan    || []).map(chuanHoaDong).filter(d => d.ten || d.ma);
+    NHIEM_VU = (kq.nhiemvu || []).map(chuanHoaViec).filter(v => v.mada && (v.nhiemvu || v.phancap || v.nguoi));
+    if(DU_AN.length === 0) throw new Error('Không có dự án — kiểm tra tên tab và tiêu đề cột hàng 1');
     chonUids.clear();
     $('khuNoiDung').innerHTML = '';
     $('lanDongBo').textContent = 'Đồng bộ lúc ' + new Date().toLocaleTimeString('vi-VN') + ' · ' + new Date().toLocaleDateString('vi-VN');
@@ -203,7 +195,7 @@ async function taiDuLieu(){
       if(nguoiCuaToi) doiView('toi');   /* thành viên: vào thẳng việc của mình */
     }
   }catch(err){
-    $('khuNoiDung').innerHTML = '<div class="notice"><h2>⚠ Không tải được dữ liệu</h2><p>Chi tiết: <code>' + thoatHTML(err.message) + '</code></p><p>Kiểm tra link CSV / tên cột hàng 1, rồi bấm ⟳ thử lại.</p></div>';
+    $('khuNoiDung').innerHTML = '<div class="notice"><h2>⚠ Không tải được dữ liệu</h2><p>Chi tiết: <code>' + thoatHTML(err.message) + '</code></p><p>Kiểm tra: Apps Script đã <b>Triển khai bản MỚI</b> · "Ai có quyền truy cập" = <b>Bất kỳ ai</b> · đúng tên 2 tab. Rồi bấm ⟳ thử lại.</p></div>';
   }
 }
 function dungBoLoc(){
