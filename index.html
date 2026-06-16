@@ -191,6 +191,8 @@
     </div>
     <div class="modal-foot" style="flex-shrink:0;">
       <span class="modal-msg" id="msgKanban" style="color:var(--concrete)">💡 Chạm để chọn thẻ • Kéo thả nhiều thẻ cùng lúc • Chuột phải hoặc nút ⋯ để Sửa/Xóa</span>
+      <button class="btn-kanban" type="button" id="btnQuanLyMau" hidden>⚙ Mẫu</button>
+      <button class="btn-kanban" type="button" id="btnTaoMau">▦ Tạo theo mẫu</button>
       <button class="btn-kanban" type="button" id="btnGiaoViecKanban">＋ Giao việc mới</button>
     </div>
   </div>
@@ -212,7 +214,53 @@
   </div>
 </div>
 
+<!-- ===== Quản lý mẫu hạng mục (super_admin) ===== -->
+<div class="modal-overlay" id="modalQuanLyMau" hidden>
+  <div class="modal" role="dialog" aria-labelledby="qmTitle" style="max-width:620px">
+    <div class="modal-head"><h3 id="qmTitle">Mẫu hạng mục</h3><button class="modal-close" type="button" data-dong>✕</button></div>
+    <div style="padding:16px 20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--concrete);text-transform:uppercase;letter-spacing:.05em">Danh sách mẫu của dự án</span>
+        <button class="th-nut" type="button" id="qm-themmoi">＋ Thêm mẫu</button>
+      </div>
+      <div id="qm-list"></div>
+      <div id="qm-builder" hidden style="border-top:1px dashed var(--line);margin-top:12px;padding-top:12px">
+        <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--concrete);margin-bottom:4px">Tên mẫu</label>
+        <input id="qm-ten" placeholder="VD: Cầu" style="width:100%;font-family:'Be Vietnam Pro',sans-serif;font-size:14px;padding:9px 12px;border:1px solid var(--line);background:var(--paper);color:var(--ink);margin-bottom:12px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--concrete);margin-bottom:6px">Các tầng (trên → dưới = Phân mục → … → Khía cạnh)</div>
+        <div id="qm-levels"></div>
+        <button class="th-nut" type="button" id="qm-addlevel" style="margin-top:4px">＋ Thêm tầng</button>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
+          <button class="btn-kanban" type="button" id="qm-huy">Hủy</button>
+          <button class="btn-submit" type="button" id="qm-luu">Lưu mẫu lên Sheet</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Tạo công việc theo mẫu ===== -->
+<div class="modal-overlay" id="modalTaoMau" hidden>
+  <div class="modal" role="dialog" aria-labelledby="tmTitle" style="max-width:560px">
+    <div class="modal-head"><h3 id="tmTitle">Tạo theo mẫu</h3><button class="modal-close" type="button" data-dong>✕</button></div>
+    <div style="padding:16px 20px">
+      <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--concrete);margin-bottom:4px">Mẫu hạng mục</label>
+      <select id="tm-mausel" style="width:100%;font-family:'Be Vietnam Pro',sans-serif;font-size:14px;padding:9px 12px;border:1px solid var(--line);background:var(--paper);color:var(--ink);margin-bottom:12px"></select>
+      <div id="tm-inputs"></div>
+      <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--concrete);margin-bottom:4px">Người thực hiện (cho cả lô)</label>
+      <select id="tm-nguoi" style="width:100%;font-family:'Be Vietnam Pro',sans-serif;font-size:14px;padding:9px 12px;border:1px solid var(--line);background:var(--paper);color:var(--ink);margin-bottom:12px"></select>
+      <div style="font-size:12px;color:var(--concrete);margin-bottom:6px">Sẽ tạo <b id="tm-count">0</b> công việc:</div>
+      <div id="tm-prev" style="border:1px solid var(--line);border-radius:6px;padding:8px 10px;max-height:180px;overflow:auto;font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.7;color:var(--ink)"></div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
+        <button class="btn-kanban" type="button" data-dong>Đóng</button>
+        <button class="btn-submit" type="button" id="tm-tao">Tạo các công việc</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ===== Form dự án ===== -->
+
 <div class="modal-overlay" id="modalDuAn" hidden>
   <div class="modal" role="dialog" aria-labelledby="tieuDeFormDA">
     <div class="modal-head">
@@ -338,6 +386,6 @@
   <span>Nguồn dữ liệu: Google Sheets · Tự làm mới mỗi 5 phút</span>
 </footer>
 
-<script src="xuly.js?v=39"></script>
+<script src="xuly.js?v=40"></script>
 </body>
 </html>
