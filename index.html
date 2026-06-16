@@ -118,6 +118,7 @@
     <button id="thMoTatCa" type="button" class="th-nut-icon" title="Mở tất cả" aria-label="Mở tất cả">+</button>
     <button id="thGapTatCa" type="button" class="th-nut-icon" title="Gập tất cả" aria-label="Gập tất cả">−</button>
     <button id="thAnXong" type="button" class="th-toggle" aria-pressed="false">Ẩn việc đã xong</button>
+    <button id="thSapAZ" type="button" class="th-toggle" aria-pressed="false">Sắp xếp A→Z</button>
     <span class="tb-spacer"></span>
     <button id="thBaoCao" type="button" class="th-toggle" title="Tạo báo cáo phòng để copy">📋 Báo cáo</button>
   </div>
@@ -284,7 +285,7 @@
       <div class="f-group f-full" id="cv-mau-fields" hidden></div>
       <div class="f-group f-full"><label>Phân cấp (ngăn bằng dấu /)</label><input id="cv-phancap" placeholder="VD: PHẦN CẦU / Cầu vượt nhánh B / Kết cấu phần trên / Mô hình" autocomplete="off"></div>
       <div class="f-group f-full"><label>Nội dung công việc (không bắt buộc)</label><input id="cv-nhiemvu" placeholder="Ghi chú thêm nếu cần — có thể để trống" autocomplete="off"></div>
-      <div class="f-group"><label>Người chính *</label><select id="cv-nguoi-chinh"><option value="">— Chọn người chính —</option></select></div>
+      <div class="f-group"><label>Người chính (để trống = chưa phân công)</label><select id="cv-nguoi-chinh"><option value="">— Chưa phân công —</option></select></div>
       <div class="f-group f-full"><label>Hỗ trợ (tùy chọn — có thể chọn nhiều người cùng làm)</label><div class="ms-wrapper" id="ms-nguoiho-container"></div></div>
       <div class="f-group"><label>Ưu tiên</label>
         <select id="cv-uutien"><option>Thấp</option><option selected>Trung bình</option><option>Cao</option></select></div>
@@ -368,6 +369,6 @@
   <span>Nguồn dữ liệu: Google Sheets · Tự làm mới mỗi 5 phút</span>
 </footer>
 
-<script src="xuly.js?v=41"></script>
+<script src="xuly.js?v=42"></script>
 </body>
 </html>
