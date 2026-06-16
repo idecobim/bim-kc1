@@ -196,6 +196,29 @@
   </div>
 </div>
 
+<!-- ===== Sơ đồ tổng quan dự án ===== -->
+<div class="modal-overlay" id="modalSoDo" hidden>
+  <div class="modal modal-kanban" role="dialog" aria-labelledby="sdTitle">
+    <div class="modal-head" style="border-bottom:none;padding-bottom:10px;flex-shrink:0;">
+      <h3 id="sdTitle">Sơ đồ tổng quan</h3>
+      <button class="modal-close" type="button" data-dong>✕</button>
+    </div>
+    <div style="flex-shrink:0;padding:0 16px 8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:1px dashed var(--line)">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--concrete);text-transform:uppercase;letter-spacing:.05em">Cột theo tầng</span>
+      <select id="sd-ct" class="k-sort-select">
+        <option value="auto">Sâu nhất (tự dò)</option>
+        <option value="2">Tầng 2</option>
+        <option value="3">Tầng 3</option>
+        <option value="4">Tầng 4</option>
+      </select>
+      <span id="sd-info" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--concrete)"></span>
+      <span style="flex:1"></span>
+      <span id="sd-legend" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center"></span>
+    </div>
+    <div id="sd-noidung" style="flex:1;overflow:auto;padding:8px 0 16px"></div>
+  </div>
+</div>
+
 <!-- ===== Form dự án ===== -->
 <div class="modal-overlay" id="modalDuAn" hidden>
   <div class="modal" role="dialog" aria-labelledby="tieuDeFormDA">
@@ -322,6 +345,6 @@
   <span>Nguồn dữ liệu: Google Sheets · Tự làm mới mỗi 5 phút</span>
 </footer>
 
-<script src="xuly.js?v=35"></script>
+<script src="xuly.js?v=38"></script>
 </body>
 </html>

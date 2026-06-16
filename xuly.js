@@ -205,6 +205,7 @@ async function taiDuLieu(){
     $('lanDongBo').textContent = 'Đồng bộ lúc ' + new Date().toLocaleTimeString('vi-VN') + ' · ' + new Date().toLocaleDateString('vi-VN');
     dungBoLoc(); veDanhSach();
     if(!$('modalKanban').hidden) veKanban();
+    if($('modalSoDo') && !$('modalSoDo').hidden) veSoDo();
     veViewPhu();
     if(!taiDuLieu._daTuChuyen){
       taiDuLieu._daTuChuyen = true;
@@ -291,7 +292,10 @@ function veDanhSach(){
       </div>
       <div class="tasks-summary">
         <span class="tasks-title">${sv} công việc</span>
-        <button class="btn-kanban" type="button" data-mokanban="${thoatHTML(d.ma)}">Mở bảng công việc →</button>
+        <span style="display:flex;gap:6px">
+          <button class="btn-kanban" type="button" data-mosodo="${thoatHTML(d.ma)}">▦ Sơ đồ</button>
+          <button class="btn-kanban" type="button" data-mokanban="${thoatHTML(d.ma)}">Bảng việc →</button>
+        </span>
       </div>
     </article>`;
   }).join('');
@@ -671,6 +675,8 @@ document.addEventListener('click', e=>{
 
 /* ====== Nút & form ====== */
 $('luoiDuAn').addEventListener('click', e=>{
+  const nutSoDo = e.target.closest('[data-mosodo]');
+  if(nutSoDo){ moSoDo(nutSoDo.dataset.mosodo); return; }
   const nutKanban = e.target.closest('[data-mokanban]');
   if(!nutKanban) return;
   madaKanbanHienTai = nutKanban.dataset.mokanban;
@@ -933,6 +939,77 @@ function pctTrangThai(tt){
   return 0;   /* chưa bắt đầu */
 }
 function mauPct(p){ return p>=100 ? 'var(--green)' : p>0 ? 'var(--amber)' : 'var(--concrete)'; }
+
+/* ============================================================
+   SƠ ĐỒ TỔNG QUAN DỰ ÁN — tự dựng từ cột Phân cấp
+   Phân mục = tầng 1 · Cột = tầng chọn (mặc định sâu nhất) · Dòng = các tầng giữa
+   ============================================================ */
+let _sodoMada = null;
+function mauSoDo(p){ if(p<=0) return null; if(p<50) return 'var(--red)'; if(p<100) return 'var(--amber)'; return 'var(--green)'; }
+function oSoDo(p){
+  if(p===null||p===undefined) return '<div></div>';
+  const c=mauSoDo(p), fill=c?'<div style="height:100%;width:'+Math.min(p,100)+'%;background:'+c+';border-radius:3px"></div>':'';
+  return '<div style="display:flex;align-items:center;gap:5px;min-width:0"><span style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;width:30px;flex-shrink:0;color:var(--concrete)">'+Math.round(p)+'%</span><div style="flex:1;height:9px;background:var(--paper);border:1px solid var(--line);border-radius:3px;overflow:hidden;min-width:0">'+fill+'</div></div>';
+}
+function chipPctNhom(s){
+  let tot=0,cnt=0; Object.values(s.map).forEach(a=>a.forEach(v=>{tot+=v;cnt++;}));
+  const p=cnt?Math.round(tot/cnt):0;
+  return '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;color:'+(mauSoDo(p)||'var(--concrete)')+'">'+p+'%</span>';
+}
+function moSoDo(mada){
+  _sodoMada = mada;
+  const d = DU_AN.find(x=>x.ma===mada);
+  $('sdTitle').textContent = 'Sơ đồ tổng quan: ' + (d && d.ten ? d.ten + ' (' + mada + ')' : mada);
+  let ct='auto'; try{ ct = localStorage.getItem('sodo_ct_'+mada) || 'auto'; }catch(e){}
+  if($('sd-ct')) $('sd-ct').value = ct;
+  const leg=[['Chưa (0%)','var(--line)'],['<50%','var(--red)'],['50–99%','var(--amber)'],['100%','var(--green)']];
+  $('sd-legend').innerHTML = leg.map(x=>'<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:13px;height:8px;border-radius:3px;background:'+x[1]+';display:inline-block"></span>'+x[0]+'</span>').join('');
+  veSoDo();
+  moOverlay('modalSoDo');
+}
+function veSoDo(){
+  if(!_sodoMada || !$('sd-noidung')) return;
+  const items = NHIEM_VU.filter(v => v.mada===_sodoMada && !dangNgung(v))
+    .map(v => ({ segs: tachCap(v.phancap), pct: pctTrangThai(v.trangthai) }))
+    .filter(x => x.segs.length >= 1);
+  const deepest = items.reduce((m,x)=>Math.max(m,x.segs.length),0) || 1;
+  const sel = $('sd-ct') ? $('sd-ct').value : 'auto';
+  const ct = sel==='auto' ? deepest : Math.min(+sel, deepest);
+  if($('sd-info')) $('sd-info').textContent = items.length ? ('sâu nhất '+deepest+' tầng · cột = tầng '+ct) : '';
+  const order=[], S={};
+  items.forEach(x=>{
+    const sec = x.segs[0] || '(không phân mục)';
+    let col, itemSegs;
+    if(x.segs.length>=ct){ col=x.segs[ct-1]; itemSegs=x.segs.slice(1,ct-1); }
+    else { col='(tổng)'; itemSegs=x.segs.slice(1); }
+    const item = itemSegs.join(' / ') || '(toàn mục)';
+    if(!S[sec]){ S[sec]={cols:[],items:[],map:{}}; order.push(sec); }
+    const s=S[sec];
+    if(!s.cols.includes(col)) s.cols.push(col);
+    if(!s.items.includes(item)) s.items.push(item);
+    const k=item+'|'+col; (s.map[k]=s.map[k]||[]).push(x.pct);
+  });
+  if(!order.length){ $('sd-noidung').innerHTML = '<div class="th-empty">Dự án chưa có công việc để dựng sơ đồ.</div>'; return; }
+  order.sort(soSanhTuNhien);
+  let h='', code=64;
+  order.forEach(sec=>{
+    code++; const s=S[sec], n=s.cols.length;
+    const labels = (n===1 && s.cols[0]==='(tổng)') ? ['Tiến độ'] : s.cols;
+    s.items.sort(soSanhTuNhien);
+    const gs='display:grid;grid-template-columns:repeat('+n+',1fr);gap:8px;flex:1;min-width:0';
+    h+='<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(232,93,4,.08);border-top:2px solid var(--ink)"><span style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--orange);width:16px;text-align:right">'+String.fromCharCode(code)+'</span><span style="font-family:\'Saira Condensed\',sans-serif;font-weight:700;font-size:15px;text-transform:uppercase">'+thoatHTML(sec)+'</span><span style="flex:1"></span>'+chipPctNhom(s)+'</div>';
+    h+='<div style="display:flex;gap:8px;padding:3px 10px;background:var(--paper)"><span style="width:16px;flex-shrink:0"></span><span style="width:150px;flex-shrink:0"></span><div style="'+gs+'">'+labels.map(l=>'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;text-transform:uppercase;color:var(--concrete);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+thoatHTML(l)+'</span>').join('')+'</div></div>';
+    s.items.forEach((it,i)=>{
+      const cells = s.cols.map(c=>{ const a=s.map[it+'|'+c]; return oSoDo(a? Math.round(a.reduce((p,q)=>p+q,0)/a.length): null); }).join('');
+      h+='<div style="display:flex;align-items:center;gap:8px;padding:5px 10px;border-top:1px solid var(--line)"><span style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:var(--concrete);width:16px;flex-shrink:0;text-align:right">'+(i+1)+'</span><span style="width:150px;flex-shrink:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+thoatHTML(it)+'">'+thoatHTML(it)+'</span><div style="'+gs+'">'+cells+'</div></div>';
+    });
+  });
+  $('sd-noidung').innerHTML = h;
+}
+if($('sd-ct')) $('sd-ct').addEventListener('change', ()=>{
+  if(_sodoMada){ try{ localStorage.setItem('sodo_ct_'+_sodoMada, $('sd-ct').value); }catch(e){} }
+  veSoDo();
+});
 
 /* Chuyển màn hình */
 function doiView(v){
