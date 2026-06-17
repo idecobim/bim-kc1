@@ -351,7 +351,7 @@ function veKanban(){
           <button class="k-more" type="button" data-kmore="${v.uid}" title="Sửa / Xóa">⋯</button>
         </div>
         <div class="k-card-title">${thoatHTML(v.nhiemvu || tachCap(v.phancap).slice(-1)[0] || '(việc chưa đặt tên)')}</div>
-        ${v.ghichu ? '<div class="k-note" data-ghichu="' + v.uid + '" style="cursor:pointer" title="Bấm để xem / xóa từng ghi chú">' + thoatHTML(v.ghichu) + '</div>' : ''}
+        ${v.ghichu ? '<div class="k-note">' + thoatHTML(v.ghichu) + '</div>' : ''}
         <div class="k-card-meta">
           <span>👤 ${thoatHTML(v.nguoi)}</span>
           ${v.han && v.han !== '-' ? '<span style="color:var(--orange)">⏳ ' + thoatHTML(v.han) + '</span>' : ''}
@@ -376,7 +376,6 @@ $('k-sort-select').addEventListener('change', veKanban);
 let _kAnchor = null;   /* uid neo cho Shift */
 document.querySelector('.kanban-wrapper').addEventListener('click', e=>{
   if(e.target.closest('.k-more')) return;
-  if(e.target.closest('.k-note')){ const c0=e.target.closest('.k-card'); if(c0) moGhiChu(Number(c0.dataset.uid)); return; }
   const card = e.target.closest('.k-card');
   if(!card) return;
   const uid = Number(card.dataset.uid);
@@ -1361,47 +1360,6 @@ if($('ctx-them-viec')) $('ctx-them-viec').addEventListener('click', ()=>{
   if(parts.length) moThemViecNhanh(parts[0], parts.slice(1));
 });
 
-let _gcUid=null;
-function moGhiChu(uid){
-  const v=NHIEM_VU.find(x=>x.uid===uid); if(!v) return;
-  _gcUid=uid;
-  if($('gcTitle')) $('gcTitle').textContent='📝 Ghi chú — '+tenViecNgan(v);
-  veGhiChu();
-  moOverlay('modalGhiChu');
-}
-function veGhiChu(){
-  const v=NHIEM_VU.find(x=>x.uid===_gcUid); if(!v || !$('gc-list')) return;
-  const ql=quanLyDuoc(v.mada);
-  const lines=String(v.ghichu||'').split('\n').map(s=>s.trim()).filter(Boolean);
-  $('gc-list').innerHTML = lines.length ? lines.map((ln,i)=>
-    '<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line)">'
-    +'<span style="color:var(--concrete);font-family:\'IBM Plex Mono\',monospace;font-size:11px;flex-shrink:0;width:18px;text-align:right">'+(i+1)+'</span>'
-    +'<span style="flex:1;font-size:14px;white-space:pre-wrap;word-break:break-word">'+thoatHTML(ln)+'</span>'
-    +(ql?'<button class="th-nut" type="button" data-gcdel="'+i+'" title="Xóa mẩu ghi chú này" style="flex-shrink:0;color:var(--red);border-color:var(--red);width:30px;padding:0">✕</button>':'')
-    +'</div>'
-  ).join('') : '<div style="color:var(--concrete);padding:12px 0">Chưa có ghi chú.</div>';
-  $('gc-list').querySelectorAll('[data-gcdel]').forEach(b=>b.addEventListener('click',()=>xoaMotGhiChu(+b.dataset.gcdel)));
-}
-function xoaMotGhiChu(idx){
-  const v=NHIEM_VU.find(x=>x.uid===_gcUid); if(!v) return;
-  if(!quanLyDuoc(v.mada)){ baoToast('Chỉ leader/admin được xóa ghi chú','err'); return; }
-  const lines=String(v.ghichu||'').split('\n').map(s=>s.trim()).filter(Boolean);
-  if(idx<0||idx>=lines.length) return;
-  const banCu=v.ghichu;
-  lines.splice(idx,1);
-  const moi=lines.join('\n');
-  v.ghichu=moi;                         /* áp ngay (lạc quan) */
-  veGhiChu(); veDanhSach(); if(!$('modalKanban').hidden) veKanban(); veViewPhu();
-  const mk=maGui();
-  const duLieu={ magoc:v.mada, phancapgoc:v.phancap||'', nvgoc:v.nhiemvu, nguoigoc:v.nguoi,
-    mada:v.mada, phancap:v.phancap||'', hangmuc:v.hangmuc||'', nhiemvu:v.nhiemvu, nguoi:v.nguoi,
-    uutien:v.uutien, han:v.han, trangthai:v.trangthai, ghichu:moi, vuongmac:v.vuongmac||'', tamngung:v.tamngung||'' };
-  fetch(LINK_APPS_SCRIPT,{method:'POST',body:JSON.stringify({type:'suanhiemvu',matkhau:mk,data:duLieu})})
-    .then(r=>r.json()).then(kq=>{ if(kq&&kq.ok){ nhoMaTrongPhien(mk); chamHoatDong(); lanGhiCuoi=Date.now(); baoToast('🗑 Đã xóa 1 ghi chú','ok'); }
-      else { v.ghichu=banCu; veGhiChu(); if(!$('modalKanban').hidden) veKanban(); baoToast('✖ Chưa xóa được: '+((kq&&kq.loi)||'lỗi'),'err'); } })
-    .catch(()=>{ v.ghichu=banCu; veGhiChu(); baoToast('✖ Mất kết nối — chưa xóa','err'); });
-}
-
 /* Chuyển màn hình */
 function doiView(v){
   if(laKhach() && v==='toi') v='duan';   /* Khách: Tab 3 khóa */
@@ -2250,9 +2208,37 @@ function parseLichSu(s){
 }
 function veThread(s){
   const el = $('lsThread'); const arr = parseLichSu(s);
+  const nv = NHIEM_VU.find(v=>v.uid===lsUid);
+  const ql = !!(nv && quanLyDuoc(nv.mada));   /* leader/admin được xóa */
   if(!arr.length){ el.innerHTML = '<div class="ls-trong">Chưa có ghi chú nào. Thêm dòng đầu tiên bên dưới.</div>'; return; }
-  el.innerHTML = arr.map(e=> '<div class="ls-item"><div class="ls-dau">'+thoatHTML(e.dau)+'</div><div class="ls-noi">'+thoatHTML(e.noidung)+'</div></div>').join('');
+  el.innerHTML = arr.map((e,i)=> '<div class="ls-item"><div class="ls-dau">'+thoatHTML(e.dau)
+    + (ql ? '<button class="th-nut" type="button" data-lsdel="'+i+'" title="Xóa mẩu lịch sử này" style="float:right;color:var(--red);border-color:var(--red);padding:0 6px;line-height:1.5;margin-top:-2px">✕</button>' : '')
+    + '</div><div class="ls-noi">'+thoatHTML(e.noidung)+'</div></div>').join('');
+  el.querySelectorAll('[data-lsdel]').forEach(b=>b.addEventListener('click',()=>xoaMotLichSu(+b.dataset.lsdel)));
   el.scrollTop = el.scrollHeight;
+}
+function xoaMotLichSu(idx){
+  const nv = NHIEM_VU.find(v=>v.uid===lsUid); if(!nv) return;
+  if(!quanLyDuoc(nv.mada)){ baoToast('Chỉ leader/admin được xóa lịch sử KCS','err'); return; }
+  const raw = String(nv.lichsukcs||'').split('|').map(x=>x.trim()).filter(Boolean);
+  if(idx<0 || idx>=raw.length) return;
+  if(!confirm('Xóa mẩu lịch sử KCS này?')) return;
+  let mk = maXacNhanCache || prompt('Nhập mã xác nhận của phòng để lưu:'); if(!mk) return;
+  const banCu = nv.lichsukcs;
+  raw.splice(idx,1);
+  const moi = raw.join(' | ');
+  nv.lichsukcs = moi;                 /* hiện ngay */
+  veThread(nv.lichsukcs); veViewPhu(); veDanhSach();
+  fetch(LINK_APPS_SCRIPT, { method:'POST', body: JSON.stringify({ type:'ghilichsu', matkhau:mk, data:{
+      magoc:nv.mada, nvgoc:nv.nhiemvu, nguoigoc:nv.nguoi, phancapgoc:nv.phancap||'', mada:nv.mada, lichsu:moi } }) })
+    .then(r=>r.json())
+    .then(kq=>{
+      if(kq.ok){ nhoMaTrongPhien(mk); chamHoatDong(); lanGhiCuoi=Date.now();
+        if(kq.lichsu!=null){ nv.lichsukcs=kq.lichsu; if(!$('modalLichSu').hidden && lsUid===nv.uid) veThread(nv.lichsukcs); veViewPhu(); veDanhSach(); }
+        baoToast('🗑 Đã xóa 1 mẩu lịch sử','ok'); }
+      else { nv.lichsukcs=banCu; veThread(nv.lichsukcs); veViewPhu(); veDanhSach(); baoToast('✖ Chưa xóa được — '+(kq.loi||'lỗi'),'err'); }
+    })
+    .catch(()=>{ nv.lichsukcs=banCu; veThread(nv.lichsukcs); veViewPhu(); veDanhSach(); baoToast('✖ Mất kết nối, chưa xóa','err'); });
 }
 function moLichSu(uid){
   const nv = NHIEM_VU.find(v=>v.uid===uid); if(!nv) return;
