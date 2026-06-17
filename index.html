@@ -20,6 +20,14 @@
 <!-- ===== 3 FILE CUA HE THONG ===== -->
 <link rel="stylesheet" href="giaodien.css?v=33">
 <script src="cauhinh.js?v=32"></script>
+<style>
+  /* Khách (chỉ xem): ẩn mọi nút tạo/sửa và khóa Tab 3 */
+  body.is-khach #nutThemDuAn,
+  body.is-khach .view-tab[data-view="toi"],
+  body.is-khach [data-mokanban],
+  body.is-khach #btnGiaoViecKanban,
+  body.is-khach #btnQuanLyMau{ display:none !important; }
+</style>
 </head>
 
 <div id="toast"></div>
@@ -317,7 +325,7 @@
       <div class="f-group f-full"><label>Tên của bạn</label><select id="dn-ten"><option value="">— Chọn tên —</option></select></div>
       <div class="f-group f-full"><label>Mã PIN</label><input id="dn-pin" type="password" inputmode="numeric" autocomplete="off" placeholder="Nhập mã PIN"></div>
       <p id="dn-msg" class="modal-msg"></p>
-      <div class="nhap-nut"><button type="button" class="btn-primary" id="dn-vao">Vào hệ thống</button></div>
+      <div class="nhap-nut" style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn-primary" id="dn-vao">Vào hệ thống</button><button type="button" class="th-nut" id="dn-khach">👁 Vào với tư cách Khách (chỉ xem)</button></div>
     </div>
   </div>
 </div>
@@ -369,6 +377,6 @@
   <span>Nguồn dữ liệu: Google Sheets · Tự làm mới mỗi 5 phút</span>
 </footer>
 
-<script src="xuly.js?v=42"></script>
+<script src="xuly.js?v=43"></script>
 </body>
 </html>

@@ -466,6 +466,7 @@ async function thaThe(trangThaiMoi){
 
 /* ====== Menu chuột phải ====== */
 document.addEventListener('contextmenu', e=>{
+  if(laKhach()) return;   /* Khách chỉ xem */
   const infoUid = thePhanCong(e.target);
   if(infoUid){
     e.preventDefault(); e.stopPropagation();
@@ -1173,6 +1174,7 @@ if($('btnQuanLyMau')) $('btnQuanLyMau').addEventListener('click', ()=>{ if(madaK
 
 /* Chuyển màn hình */
 function doiView(v){
+  if(laKhach() && v==='toi') v='duan';   /* Khách: Tab 3 khóa */
   viewHienTai = v;
   document.querySelectorAll('.view-tab').forEach(b=>b.classList.toggle('active', b.dataset.view===v));
   $('luoiDuAn').style.display      = v==='duan' ? '' : 'none';
@@ -2117,11 +2119,13 @@ $('cbChiTiet').addEventListener('click', e=>{
 let nguoiDangNhap = null;   /* {ten, pin, role} */
 function timNguoiDung(ten){ return (typeof DANH_SACH_NHAN_SU!=='undefined') ? (DANH_SACH_NHAN_SU.find(u=>u.ten===ten) || null) : null; }
 function laAdmin(){ return !!(nguoiDangNhap && nguoiDangNhap.role==='super_admin'); }
+function laKhach(){ return !!(nguoiDangNhap && nguoiDangNhap.role==='khach'); }
+function taoKhach(){ return { ten:'Khách', pin:'', role:'khach' }; }
 function maGui(){ return nguoiDangNhap ? String(nguoiDangNhap.pin) : (maXacNhanCache||''); }
 function dsLeader(da){ return (da && da.leader ? String(da.leader) : '').split(',').map(s=>s.trim()).filter(Boolean); }
 function laLeaderCuaDuAn(mada){
   if(laAdmin()) return true;
-  if(!nguoiDangNhap) return false;
+  if(laKhach() || !nguoiDangNhap) return false;
   const da = timDA(mada);
   return !!(da && dsLeader(da).includes(nguoiDangNhap.ten));
 }
@@ -2170,19 +2174,28 @@ function apQuyenFormViec(mada){
   datKhoaO(sel, !ql);
   if(!ql && sel && !sel.value && nguoiDangNhap){ sel.value = nguoiDangNhap.ten; }  /* thành viên tạo việc: tự là người chính */
 }
-function capNhatQuyen(){ document.body.classList.toggle('is-leader', laAdmin()); }
+function capNhatQuyen(){ document.body.classList.toggle('is-leader', laAdmin()); document.body.classList.toggle('is-khach', laKhach()); }
 function dongBoQuyen(){
   if(!$('modalKanban').hidden && madaKanbanHienTai) datQuyenTheoDuAn(madaKanbanHienTai);
   else capNhatQuyen();
 }
 function ketThucDangNhap(){
   $('modalDangNhap').hidden = true; moCuonNeuHetModal();
-  maXacNhanCache = String(nguoiDangNhap.pin);
+  maXacNhanCache = String(nguoiDangNhap.pin||'');
   capNhatQuyen();
   const fn = $('footDangNhap');
-  if(fn){ fn.innerHTML = '· 👤 ' + thoatHTML(nguoiDangNhap.ten) + ' (' + (laAdmin()?'quản trị':'nhân viên') + ') · <a href="#" id="dangXuat">Đăng xuất</a>';
+  if(fn){ const nhan = laKhach() ? 'Khách · chỉ xem' : (laAdmin()?'quản trị':'nhân viên');
+    fn.innerHTML = '· 👤 ' + thoatHTML(nguoiDangNhap.ten) + ' (' + nhan + ') · <a href="#" id="dangXuat">Đăng xuất</a>';
     const dx = $('dangXuat'); if(dx) dx.addEventListener('click', e=>{ e.preventDefault(); dangXuat(); }); }
-  if(!nguoiCuaToi){ nguoiCuaToi = nguoiDangNhap.ten; try{ localStorage.setItem('nguoiCuaToi', nguoiCuaToi); }catch(e){} }
+  if(!laKhach() && !nguoiCuaToi){ nguoiCuaToi = nguoiDangNhap.ten; try{ localStorage.setItem('nguoiCuaToi', nguoiCuaToi); }catch(e){} }
+  if(laKhach()){ const t=document.querySelector('.view-tab.active'); if(t && t.dataset.view==='toi') doiView('duan'); }
+}
+function dangNhapKhach(){
+  nguoiDangNhap = taoKhach();
+  try{ localStorage.setItem('phienDangNhap', JSON.stringify({ khach:true })); }catch(e){}
+  if($('dn-msg')) $('dn-msg').textContent='';
+  ketThucDangNhap();
+  veDanhSach(); veViewPhu();
 }
 function dangNhap(){
   const u = timNguoiDung($('dn-ten').value);
@@ -2207,12 +2220,14 @@ function dangXuat(){
   const sel = $('dn-ten');
   if(sel && typeof DANH_SACH_NHAN_SU!=='undefined') DANH_SACH_NHAN_SU.forEach(u=> sel.add(new Option(u.ten, u.ten)));
   try{ const s = JSON.parse(localStorage.getItem('phienDangNhap')||'null');
-    const u = s && timNguoiDung(s.ten);
-    if(u && String(u.pin)===String(s.pin)){ nguoiDangNhap = { ten:u.ten, pin:u.pin, role:u.role }; }
+    if(s && s.khach){ nguoiDangNhap = taoKhach(); }
+    else { const u = s && timNguoiDung(s.ten);
+      if(u && String(u.pin)===String(s.pin)){ nguoiDangNhap = { ten:u.ten, pin:u.pin, role:u.role }; } }
   }catch(e){}
   if(nguoiDangNhap) ketThucDangNhap();
   else moOverlay('modalDangNhap');
   if($('dn-vao')) $('dn-vao').addEventListener('click', dangNhap);
+  if($('dn-khach')) $('dn-khach').addEventListener('click', dangNhapKhach);
   if($('dn-pin')) $('dn-pin').addEventListener('keydown', e=>{ if(e.key==='Enter') dangNhap(); });
 })();
 
