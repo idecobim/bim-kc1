@@ -26,7 +26,9 @@
   body.is-khach .view-tab[data-view="toi"],
   body.is-khach [data-mokanban],
   body.is-khach #btnGiaoViecKanban,
-  body.is-khach #btnQuanLyMau{ display:none !important; }
+  body.is-khach #btnQuanLyMau,
+  body.is-khach #sd-grip-col,
+  body.is-khach #sd-grip-name{ display:none !important; }
 </style>
 </head>
 
@@ -214,7 +216,12 @@
       <button class="modal-close" type="button" data-dong>✕</button>
     </div>
     <div style="flex-shrink:0;padding:0 16px 8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:1px dashed var(--line)">
-      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--concrete)">Chọn tầng làm cột riêng ở từng phân mục bên dưới ▾</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--concrete)">Mỗi mục: chọn tầng cột ▾ · nút ⇄ đảo cột↔hàng</span>
+      <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--concrete);user-select:none">Cột tên
+        <span id="sd-grip-name" title="Kéo để giãn cột tên" style="cursor:ew-resize;padding:2px 7px;border:1px solid var(--line);border-radius:4px;background:var(--paper);touch-action:none">↔</span></span>
+      <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--concrete);user-select:none">Cột thanh
+        <span id="sd-grip-col" title="Kéo để giãn các cột thanh" style="cursor:ew-resize;padding:2px 7px;border:1px solid var(--line);border-radius:4px;background:var(--paper);touch-action:none">↔</span></span>
+      <button class="th-nut" type="button" id="sd-luu" hidden title="Lưu bố cục lên Sheet để mọi người (kể cả Khách) xem">💾 Lưu bố cục</button>
       <span style="flex:1"></span>
       <span id="sd-legend" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center"></span>
     </div>
@@ -378,6 +385,6 @@
   <span>Nguồn dữ liệu: Google Sheets · Tự làm mới mỗi 5 phút</span>
 </footer>
 
-<script src="xuly.js?v=44"></script>
+<script src="xuly.js?v=45"></script>
 </body>
 </html>

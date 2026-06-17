@@ -153,7 +153,8 @@ function chuanHoaDong(row){
     hannop: o['han nop'] || o['han'] || '',
     link: o['link'] || o['link portal'] || '#',
     leader: o['leader'] || o['leader du an'] || o['leader/quan ly'] || '',
-    khach: ['x','1','true','co','✓','yes'].includes((o['khach']||o['cho khach xem']||'').toLowerCase())
+    khach: ['x','1','true','co','✓','yes'].includes((o['khach']||o['cho khach xem']||'').toLowerCase()),
+    sodo: o['so do'] || o['sodo'] || o['bo cuc so do'] || ''
   };
 }
 function chuanHoaViec(row){
@@ -959,29 +960,38 @@ function mauPct(p){ return p>=100 ? 'var(--green)' : p>0 ? 'var(--amber)' : 'var
    Phân mục = tầng 1 · Cột = tầng chọn (mặc định sâu nhất) · Dòng = các tầng giữa
    ============================================================ */
 let _sodoMada = null;
+let _sodoCfg = { tiers:{}, trans:{}, colW:120, nameW:150 };   /* bố cục sơ đồ của dự án hiện tại */
 function mauSoDo(p){ if(p<=0) return null; if(p<50) return 'var(--red)'; if(p<100) return 'var(--amber)'; return 'var(--green)'; }
 function oSoDo(p){
   if(p===null||p===undefined) return '<div></div>';
   const c=mauSoDo(p), fill=c?'<div style="height:100%;width:'+Math.min(p,100)+'%;background:'+c+';border-radius:3px"></div>':'';
   return '<div style="display:flex;align-items:center;gap:5px;min-width:0"><span style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;width:30px;flex-shrink:0;color:var(--concrete)">'+Math.round(p)+'%</span><div style="flex:1;height:9px;background:var(--paper);border:1px solid var(--line);border-radius:3px;overflow:hidden;min-width:0">'+fill+'</div></div>';
 }
+/* ----- Bố cục: nạp/lưu (cá nhân ở máy + chung trên Sheet) ----- */
+function _sodoTaiCfg(mada){
+  let cfg=null;
+  try{ const ls=localStorage.getItem('sodo_cfg_'+mada); if(ls) cfg=JSON.parse(ls); }catch(e){}
+  if(!cfg){ const d=DU_AN.find(x=>x.ma===mada); if(d && d.sodo){ try{ cfg=JSON.parse(d.sodo); }catch(e){} } }
+  cfg = cfg || {};
+  return { tiers:cfg.tiers||{}, trans:cfg.trans||{}, colW:+cfg.colW||120, nameW:+cfg.nameW||150 };
+}
+function _sodoLuuLocal(){ if(typeof laKhach==='function' && laKhach()) return; try{ localStorage.setItem('sodo_cfg_'+_sodoMada, JSON.stringify(_sodoCfg)); }catch(e){} }
 function moSoDo(mada){
   _sodoMada = mada;
+  _sodoCfg = _sodoTaiCfg(mada);
   const d = DU_AN.find(x=>x.ma===mada);
   $('sdTitle').textContent = 'Sơ đồ tổng quan: ' + (d && d.ten ? d.ten + ' (' + mada + ')' : mada);
   const leg=[['Chưa (0%)','var(--line)'],['<50%','var(--red)'],['50–99%','var(--amber)'],['100%','var(--green)']];
   $('sd-legend').innerHTML = leg.map(x=>'<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:13px;height:8px;border-radius:3px;background:'+x[1]+';display:inline-block"></span>'+x[0]+'</span>').join('');
+  if($('sd-luu')) $('sd-luu').hidden = !laAdmin();   /* chỉ super_admin lưu bố cục chung cho Khách */
   veSoDo();
   moOverlay('modalSoDo');
 }
-/* Tầng cột đã chọn cho riêng từng (dự án + phân mục) */
-function khoaCtMuc(sec){ return 'sodo_ct_' + _sodoMada + '||' + sec; }
 function veSoDo(){
   if(!_sodoMada || !$('sd-noidung')) return;
   const recs = NHIEM_VU.filter(v => v.mada===_sodoMada && !dangNgung(v))
     .map(v => ({ segs: tachCap(v.phancap), pct: pctTrangThai(v.trangthai) }))
     .filter(x => x.segs.length >= 1);
-  /* Gom theo phân mục (tầng 1) + biết độ sâu của riêng từng mục */
   const order=[], G={};
   recs.forEach(x=>{
     const sec = x.segs[0] || '(không phân mục)';
@@ -991,14 +1001,13 @@ function veSoDo(){
   if(!order.length){ $('sd-noidung').innerHTML = '<div class="th-empty">Dự án chưa có công việc để dựng sơ đồ.</div>'; return; }
   order.sort(soSanhTuNhien);
 
-  let h='', code=64;
+  /* Lượt 1: dựng pivot từng mục (kèm đảo), tính số cột lớn nhất để căn đều */
+  const secs=[]; let maxCols=1;
   order.forEach(sec=>{
-    code++; const d = G[sec].deepest;
-    let selRaw='auto'; try{ selRaw = localStorage.getItem(khoaCtMuc(sec)) || 'auto'; }catch(e){}
-    /* Tự dò: mục ≥3 tầng → tầng sâu nhất là CỘT (khía cạnh); mục ≤2 tầng → mục con là DÒNG, cột "Tiến độ" */
-    const autoCt = (d>=3) ? d : (d+1);
-    const ct = selRaw==='auto' ? autoCt : Math.min(+selRaw, d);   /* tầng cột RIÊNG của mục này */
-    /* pivot riêng mục này */
+    const d=G[sec].deepest;
+    const tierRaw=_sodoCfg.tiers[sec]||'auto';
+    const autoCt=(d>=3)?d:(d+1);
+    const ct = tierRaw==='auto'?autoCt:Math.min(+tierRaw,d);
     const cols=[], items=[], map={};
     G[sec].recs.forEach(x=>{
       let col, it;
@@ -1010,36 +1019,78 @@ function veSoDo(){
       const k=item+'|'+col; (map[k]=map[k]||[]).push(x.pct);
     });
     items.sort(soSanhTuNhien);
-    const n=cols.length, labels=(n===1 && cols[0]==='(tổng)')?['Tiến độ']:cols;
+    const colDisp=(cols.length===1 && cols[0]==='(tổng)')?['Tiến độ']:cols.slice();
     let tot=0,cnt=0; Object.values(map).forEach(a=>a.forEach(v=>{tot+=v;cnt++;})); const sp=cnt?Math.round(tot/cnt):0;
-    /* ô chọn tầng NHỎ GỌN — chỉ hiện khi mục có ≥3 tầng (mới có gì để chọn) */
+    const trans=!!_sodoCfg.trans[sec];
+    const headLabels = trans ? items.slice() : colDisp;   /* nhãn cột hiển thị */
+    const rowKeys    = trans ? cols.slice()  : items;     /* khóa dòng */
+    const rowDisp    = trans ? colDisp       : items;     /* nhãn dòng hiển thị */
+    secs.push({sec,d,tierRaw,cols,items,map,sp,trans,headLabels,rowKeys,rowDisp});
+    maxCols=Math.max(maxCols, headLabels.length);
+  });
+
+  /* áp bề rộng cột/tên (CSS var) */
+  $('sd-noidung').style.setProperty('--sdcolw', (_sodoCfg.colW||120)+'px');
+  $('sd-noidung').style.setProperty('--sdnamew', (_sodoCfg.nameW||150)+'px');
+
+  /* Lượt 2: render — mọi mục dùng chung lưới maxCols × cột rộng cố định (căn đều, trái) */
+  let h='', code=64;
+  const khach = (typeof laKhach==='function' && laKhach());
+  secs.forEach(S=>{
+    code++;
+    const gs='display:grid;grid-template-columns:repeat('+maxCols+',var(--sdcolw));gap:8px;flex-shrink:0';
     let selHtml='';
-    if(d>=3){
-      let opts='<option value="auto"'+(selRaw==='auto'?' selected':'')+'>tự dò</option>';
-      for(let t=2;t<=d;t++) opts+='<option value="'+t+'"'+(String(selRaw)===String(t)?' selected':'')+'>T'+t+'</option>';
-      selHtml='<select data-secsel="'+thoatHTML(sec)+'" title="Chọn tầng làm cột cho mục này" style="height:21px;font-size:10.5px;padding:0 3px;border:1px solid var(--line);border-radius:4px;background:var(--white);color:var(--ink);max-width:70px;cursor:pointer">'+opts+'</select>';
+    if(S.d>=3 && !khach){
+      let opts='<option value="auto"'+(S.tierRaw==='auto'?' selected':'')+'>tự dò</option>';
+      for(let t=2;t<=S.d;t++) opts+='<option value="'+t+'"'+(String(S.tierRaw)===String(t)?' selected':'')+'>T'+t+'</option>';
+      selHtml='<select data-secsel="'+thoatHTML(S.sec)+'" title="Chọn tầng làm cột" style="height:21px;font-size:10.5px;padding:0 3px;border:1px solid var(--line);border-radius:4px;background:var(--white);color:var(--ink);max-width:70px;cursor:pointer">'+opts+'</select>';
     }
-    const gs='display:grid;grid-template-columns:repeat('+n+',1fr);gap:8px;flex:1;min-width:0';
+    const transBtn = khach ? '' : '<button class="th-nut" type="button" data-sectrans="'+thoatHTML(S.sec)+'" title="Đảo cột ↔ hàng cho riêng mục này" style="height:21px;font-size:10.5px;padding:0 7px;'+(S.trans?'background:rgba(232,93,4,.15);border-color:var(--orange);color:var(--orange)':'')+'">⇄ '+(S.trans?'đã đảo':'đảo')+'</button>';
+    h+='<div style="min-width:max-content">';
     h+='<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(232,93,4,.08);border-top:2px solid var(--ink)">'
       + '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--orange);width:16px;flex-shrink:0;text-align:right">'+String.fromCharCode(code)+'</span>'
-      + '<span style="font-family:\'Saira Condensed\',sans-serif;font-weight:700;font-size:15px;text-transform:uppercase;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+thoatHTML(sec)+'</span>'
-      + selHtml
-      + '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;width:40px;flex-shrink:0;text-align:right;color:'+(mauSoDo(sp)||'var(--concrete)')+'">'+sp+'%</span></div>';
-    h+='<div style="display:flex;gap:8px;padding:3px 10px;background:var(--paper)"><span style="width:16px;flex-shrink:0"></span><span style="width:150px;flex-shrink:0"></span><div style="'+gs+'">'+labels.map(l=>'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;text-transform:uppercase;color:var(--concrete);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+thoatHTML(l)+'</span>').join('')+'</div></div>';
-    items.forEach((it,i)=>{
-      const cells = cols.map(c=>{ const a=map[it+'|'+c]; return oSoDo(a? Math.round(a.reduce((p,q)=>p+q,0)/a.length): null); }).join('');
-      h+='<div style="display:flex;align-items:center;gap:8px;padding:5px 10px;border-top:1px solid var(--line)"><span style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:var(--concrete);width:16px;flex-shrink:0;text-align:right">'+(i+1)+'</span><span style="width:150px;flex-shrink:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+thoatHTML(it)+'">'+thoatHTML(it)+'</span><div style="'+gs+'">'+cells+'</div></div>';
+      + '<span style="font-family:\'Saira Condensed\',sans-serif;font-weight:700;font-size:15px;text-transform:uppercase;width:var(--sdnamew);flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+thoatHTML(S.sec)+'">'+thoatHTML(S.sec)+'</span>'
+      + selHtml + transBtn
+      + '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;width:40px;flex-shrink:0;text-align:right;color:'+(mauSoDo(S.sp)||'var(--concrete)')+'">'+S.sp+'%</span></div>';
+    h+='<div style="display:flex;gap:8px;padding:3px 10px;background:var(--paper)"><span style="width:16px;flex-shrink:0"></span><span style="width:var(--sdnamew);flex-shrink:0"></span><div style="'+gs+'">'+S.headLabels.map(l=>'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;text-transform:uppercase;color:var(--concrete);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+thoatHTML(l)+'">'+thoatHTML(l)+'</span>').join('')+'</div></div>';
+    S.rowKeys.forEach((rk,r)=>{
+      const cells=S.headLabels.map((hl,c)=>{
+        const key = S.trans ? (S.items[c]+'|'+S.cols[r]) : (S.items[r]+'|'+S.cols[c]);
+        const a=S.map[key]; return oSoDo(a? Math.round(a.reduce((p,q)=>p+q,0)/a.length): null);
+      }).join('');
+      const name=S.rowDisp[r];
+      h+='<div style="display:flex;align-items:center;gap:8px;padding:5px 10px;border-top:1px solid var(--line)"><span style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:var(--concrete);width:16px;flex-shrink:0;text-align:right">'+(r+1)+'</span><span style="width:var(--sdnamew);flex-shrink:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+thoatHTML(name)+'">'+thoatHTML(name)+'</span><div style="'+gs+'">'+cells+'</div></div>';
     });
+    h+='</div>';
   });
   $('sd-noidung').innerHTML = h;
-  /* gắn sự kiện cho từng ô chọn tầng — đổi mục nào chỉ vẽ lại, nhớ riêng mục đó */
-  $('sd-noidung').querySelectorAll('[data-secsel]').forEach(se=>{
-    se.addEventListener('change', ()=>{
-      try{ localStorage.setItem(khoaCtMuc(se.dataset.secsel), se.value); }catch(e){}
-      veSoDo();
-    });
+  $('sd-noidung').querySelectorAll('[data-secsel]').forEach(se=>se.addEventListener('change',()=>{ _sodoCfg.tiers[se.dataset.secsel]=se.value; _sodoLuuLocal(); veSoDo(); }));
+  $('sd-noidung').querySelectorAll('[data-sectrans]').forEach(b=>b.addEventListener('click',()=>{ const s=b.dataset.sectrans; _sodoCfg.trans[s]=!_sodoCfg.trans[s]; _sodoLuuLocal(); veSoDo(); }));
+}
+/* Kéo giãn cột / tên (đặt 1 lần — grip nằm trên thanh điều khiển) */
+function _sodoKeo(grip, prop, vmin, vmax, cssVar){
+  if(!grip) return;
+  grip.addEventListener('pointerdown', e=>{
+    e.preventDefault();
+    const x0=e.clientX, v0=_sodoCfg[prop]|| (prop==='colW'?120:150);
+    try{ grip.setPointerCapture(e.pointerId); }catch(_){}
+    const mv=ev=>{ const v=Math.max(vmin, Math.min(vmax, v0 + (ev.clientX - x0))); _sodoCfg[prop]=v; $('sd-noidung').style.setProperty(cssVar, v+'px'); };
+    const up=()=>{ grip.removeEventListener('pointermove',mv); grip.removeEventListener('pointerup',up); _sodoLuuLocal(); };
+    grip.addEventListener('pointermove',mv); grip.addEventListener('pointerup',up);
   });
 }
+_sodoKeo($('sd-grip-col'),'colW',70,460,'--sdcolw');
+_sodoKeo($('sd-grip-name'),'nameW',90,380,'--sdnamew');
+if($('sd-luu')) $('sd-luu').addEventListener('click', async ()=>{
+  const btn=$('sd-luu'); btn.disabled=true;
+  try{
+    const res=await fetch(LINK_APPS_SCRIPT,{method:'POST',body:JSON.stringify({type:'luusodo',matkhau:maGui(),data:{mada:_sodoMada, sodo:JSON.stringify(_sodoCfg)}})});
+    const kq=await res.json();
+    if(kq.ok){ const d=DU_AN.find(x=>x.ma===_sodoMada); if(d) d.sodo=JSON.stringify(_sodoCfg); baoToast('✔ Đã lưu bố cục — Khách xem được','ok'); }
+    else baoToast('✖ '+(kq.loi||'Lỗi'),'err');
+  }catch(e){ baoToast('✖ '+e.message,'err'); }
+  finally{ btn.disabled=false; }
+});
 
 /* ============================================================
    MẪU HẠNG MỤC THEO DỰ ÁN — super_admin cấu hình, lưu trên Sheet
