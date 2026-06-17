@@ -235,9 +235,9 @@
       <div id="qm-builder" hidden style="border-top:1px dashed var(--line);margin-top:12px;padding-top:12px">
         <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--concrete);margin-bottom:4px">Tên mẫu</label>
         <input id="qm-ten" placeholder="VD: Cầu" style="width:100%;font-family:'Be Vietnam Pro',sans-serif;font-size:14px;padding:9px 12px;border:1px solid var(--line);background:var(--paper);color:var(--ink);margin-bottom:12px">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--concrete);margin-bottom:6px">Các tầng (trên → dưới = Phân mục → … → Khía cạnh)</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--concrete);margin-bottom:6px">Cây phân nhánh — mỗi nhánh có thể có nhánh con. Tích "nhập" nếu cấp đó gõ tay khi tạo việc (vd: Tên cầu).</div>
         <div id="qm-levels"></div>
-        <button class="th-nut" type="button" id="qm-addlevel" style="margin-top:4px">＋ Thêm tầng</button>
+        <button class="th-nut" type="button" id="qm-addlevel" style="margin-top:4px">＋ Thêm nhánh gốc</button>
         <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
           <button class="btn-kanban" type="button" id="qm-huy">Hủy</button>
           <button class="btn-submit" type="button" id="qm-luu">Lưu mẫu lên Sheet</button>
@@ -269,6 +269,7 @@
       <div class="f-group"><label>Hạn nộp <button type="button" class="nut-mo-han" data-han="da-hannop">🔒 Đổi hạn (leader)</button></label><input id="da-hannop" placeholder="dd/mm/yyyy" autocomplete="off"></div>
       <div class="f-group f-full"><label>Phụ trách *</label><div class="ms-wrapper" id="ms-phutrach-container"></div></div>
       <div class="f-group f-full"><label>Leader dự án (có thể chọn nhiều — quyền như nhau)</label><div class="ms-wrapper" id="ms-leader-container"></div></div>
+      <div class="f-group f-full"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="da-khach" style="width:16px;height:16px;cursor:pointer"> 👁 Cho tài khoản Khách xem dự án này (chỉ xem — không ảnh hưởng phân việc)</label></div>
       <div class="f-group f-full"><label>Link portal</label><input id="da-link" placeholder="https://..." autocomplete="off"></div>
       <div class="f-group f-full"><label>Mã xác nhận của phòng *</label><input id="da-matkhau" type="password" autocomplete="new-password"></div>
     </div>
@@ -377,6 +378,6 @@
   <span>Nguồn dữ liệu: Google Sheets · Tự làm mới mỗi 5 phút</span>
 </footer>
 
-<script src="xuly.js?v=43"></script>
+<script src="xuly.js?v=44"></script>
 </body>
 </html>
