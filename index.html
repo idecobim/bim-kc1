@@ -58,6 +58,12 @@
   </ul>
 </div>
 
+<div id="thBranchMenu" class="context-menu">
+  <ul>
+    <li id="ctx-them-viec">➕ Thêm việc ở đây</li>
+  </ul>
+</div>
+
 
 <header>
   <div class="hd-top">
@@ -128,7 +134,6 @@
     <button id="thMoTatCa" type="button" class="th-nut-icon" title="Mở tất cả" aria-label="Mở tất cả">+</button>
     <button id="thGapTatCa" type="button" class="th-nut-icon" title="Gập tất cả" aria-label="Gập tất cả">−</button>
     <button id="thAnXong" type="button" class="th-toggle" aria-pressed="false">Ẩn việc đã xong</button>
-    <button id="thSapAZ" type="button" class="th-toggle" aria-pressed="false">Sắp xếp A→Z</button>
     <span class="tb-spacer"></span>
     <button id="thBaoCao" type="button" class="th-toggle" title="Tạo báo cáo phòng để copy">📋 Báo cáo</button>
   </div>
@@ -250,6 +255,17 @@
           <button class="btn-submit" type="button" id="qm-luu">Lưu mẫu lên Sheet</button>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Xem & xóa từng ghi chú ===== -->
+<div class="modal-overlay" id="modalGhiChu" hidden>
+  <div class="modal" role="dialog" aria-labelledby="gcTitle" style="max-width:520px">
+    <div class="modal-head"><h3 id="gcTitle">📝 Ghi chú</h3><button class="modal-close" type="button" data-dong>✕</button></div>
+    <div style="padding:8px 20px 18px">
+      <div style="font-size:11px;color:var(--concrete);margin-bottom:4px">Mỗi dòng là một mẩu ghi chú · leader/admin có thể xóa từng mẩu</div>
+      <div id="gc-list"></div>
     </div>
   </div>
 </div>
@@ -385,6 +401,6 @@
   <span>Nguồn dữ liệu: Google Sheets · Tự làm mới mỗi 5 phút</span>
 </footer>
 
-<script src="xuly.js?v=45"></script>
+<script src="xuly.js?v=47"></script>
 </body>
 </html>

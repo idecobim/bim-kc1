@@ -81,9 +81,6 @@ function giaTriLaMaDau(s){
   return (m && laMaSoLaMa(m[1])) ? soLaMaSangSo(m[1]) : null;
 }
 function soSanhTuNhien(a, b){
-  const ra = giaTriLaMaDau(a), rb = giaTriLaMaDau(b);
-  if(ra!==null && rb!==null && ra!==rb) return ra - rb;       /* cả hai là số La Mã → so giá trị */
-  if((ra!==null) !== (rb!==null)) return ra!==null ? -1 : 1;  /* mục La Mã đứng trước mục chữ thường */
   return String(a||'').localeCompare(String(b||''), 'vi', { numeric:true, sensitivity:'base' });
 }
 /* ===== Việc chưa phân công (Cách 1: nhóm ảo, không thêm cột) ===== */
@@ -297,9 +294,9 @@ function veDanhSach(){
         <div class="prog-head"><span>Tiến độ (theo việc hoàn thành)</span><span class="pct">${pct}%</span></div>
         <div class="prog-track"><div class="prog-fill" style="width:${pct}%"></div><div class="prog-dash"></div></div>
       </div>
-      <div class="tasks-summary">
+      <div class="tasks-summary" style="flex-wrap:wrap;gap:8px;align-items:center">
         <span class="tasks-title">${sv} công việc${svCPC ? ' · <span style="color:var(--orange);font-weight:600" title="' + svCPC + ' việc chưa phân công người">⚠ ' + svCPC + ' chưa giao</span>' : ''}</span>
-        <span style="display:flex;gap:6px">
+        <span style="display:flex;gap:6px;flex-wrap:wrap;margin-left:auto">
           <button class="btn-kanban" type="button" data-mosodo="${thoatHTML(d.ma)}">▦ Sơ đồ</button>
           <button class="btn-kanban" type="button" data-mokanban="${thoatHTML(d.ma)}">Bảng việc →</button>
         </span>
@@ -354,7 +351,7 @@ function veKanban(){
           <button class="k-more" type="button" data-kmore="${v.uid}" title="Sửa / Xóa">⋯</button>
         </div>
         <div class="k-card-title">${thoatHTML(v.nhiemvu || tachCap(v.phancap).slice(-1)[0] || '(việc chưa đặt tên)')}</div>
-        ${v.ghichu ? '<div class="k-note">' + thoatHTML(v.ghichu) + '</div>' : ''}
+        ${v.ghichu ? '<div class="k-note" data-ghichu="' + v.uid + '" style="cursor:pointer" title="Bấm để xem / xóa từng ghi chú">' + thoatHTML(v.ghichu) + '</div>' : ''}
         <div class="k-card-meta">
           <span>👤 ${thoatHTML(v.nguoi)}</span>
           ${v.han && v.han !== '-' ? '<span style="color:var(--orange)">⏳ ' + thoatHTML(v.han) + '</span>' : ''}
@@ -375,14 +372,25 @@ document.querySelector('.kanban-tools').addEventListener('click', e=>{
 });
 $('k-sort-select').addEventListener('change', veKanban);
 
-/* Chọn thẻ (giữ lựa chọn qua các lần vẽ lại nhờ chonUids) */
+/* Chọn thẻ: click = chọn 1 · Ctrl/Cmd = bật/tắt từng thẻ · Shift = chọn dải (giữ qua các lần vẽ lại nhờ chonUids) */
+let _kAnchor = null;   /* uid neo cho Shift */
 document.querySelector('.kanban-wrapper').addEventListener('click', e=>{
   if(e.target.closest('.k-more')) return;
+  if(e.target.closest('.k-note')){ const c0=e.target.closest('.k-card'); if(c0) moGhiChu(Number(c0.dataset.uid)); return; }
   const card = e.target.closest('.k-card');
   if(!card) return;
   const uid = Number(card.dataset.uid);
-  if(chonUids.has(uid)){ chonUids.delete(uid); card.classList.remove('k-selected'); }
-  else { chonUids.add(uid); card.classList.add('k-selected'); }
+  const tatCaUid = [...document.querySelectorAll('.kanban-wrapper .k-card')].map(c=>Number(c.dataset.uid));
+  if(e.shiftKey && _kAnchor!=null){
+    const i1=tatCaUid.indexOf(_kAnchor), i2=tatCaUid.indexOf(uid);
+    if(i1>-1 && i2>-1){ const [a,b]=i1<i2?[i1,i2]:[i2,i1]; if(!(e.ctrlKey||e.metaKey)) chonUids.clear(); for(let k=a;k<=b;k++) chonUids.add(tatCaUid[k]); }
+  } else if(e.ctrlKey || e.metaKey){
+    if(chonUids.has(uid)) chonUids.delete(uid); else chonUids.add(uid);
+    _kAnchor = uid;
+  } else {
+    chonUids.clear(); chonUids.add(uid); _kAnchor = uid;
+  }
+  document.querySelectorAll('.kanban-wrapper .k-card').forEach(c=>c.classList.toggle('k-selected', chonUids.has(Number(c.dataset.uid))));
 });
 
 /* Nút ⋯ trên thẻ — đường tắt Sửa/Xóa cho cả mobile (không có chuột phải) */
@@ -485,6 +493,19 @@ document.addEventListener('contextmenu', e=>{
     menu.style.top = e.pageY + 'px'; menu.style.left = e.pageX + 'px';
     menu.classList.add('show');
     $('ctx-t-edit').style.display = ctxTaskUids.length > 1 ? 'none' : 'flex';
+    return;
+  }
+  const brTab2 = e.target.closest('#thCay .th-br');
+  if(brTab2 && brTab2.dataset.mo){
+    const parts = brTab2.dataset.mo.split('/').filter(Boolean);
+    const mada = parts[0];
+    if(parts.length>=2 && (laAdmin() || laLeaderCuaDuAn(mada))){
+      e.preventDefault(); e.stopPropagation();
+      _ctxBranchKey = brTab2.dataset.mo;
+      const menu = $('thBranchMenu');
+      menu.style.top = e.pageY + 'px'; menu.style.left = e.pageX + 'px';
+      menu.classList.add('show');
+    }
     return;
   }
   const pCard = e.target.closest('.card');
@@ -1284,6 +1305,103 @@ if($('cv-mau')) $('cv-mau').addEventListener('change', apMauForm);
 if($('btnQuanLyMau')) $('btnQuanLyMau').addEventListener('click', ()=>{ if(madaKanbanHienTai) moQuanLyMau(madaKanbanHienTai); });
 
 
+/* ============================================================
+   #5 THÊM VIỆC NHANH TỪ BẢNG TỔNG HỢP (chuột phải nhánh)
+   #6 XEM & XÓA TỪNG GHI CHÚ (leader/admin)
+   ============================================================ */
+let _ctxBranchKey = null;
+/* Dò mẫu khớp với đường dẫn nhánh đã chọn (để phân cấp thuộc mẫu nếu trùng) */
+function khopMauVoiDuong(mada, segs){
+  const ds = mauCuaDuAn(mada);
+  for(let ti=0; ti<ds.length; ti++){
+    const chon=[], nhap={}; let nodes=ds[ti].levels||[], ok=true;
+    for(let L=0; L<segs.length; L++){
+      if(!nodes || !nodes.length){ ok=false; break; }
+      let j = nodes.findIndex(n=>!n.i && String(n.l).trim()===String(segs[L]).trim());
+      if(j<0) j = nodes.findIndex(n=>n.i);   /* nút "nhập" nhận mọi giá trị */
+      if(j<0){ ok=false; break; }
+      chon[L]=j; if(nodes[j].i) nhap[L]=segs[L];
+      nodes = nodes[j].c||[];
+    }
+    if(ok && segs.length) return { mauIndex:ti, chon, nhap };
+  }
+  return null;
+}
+function moThemViecNhanh(mada, segs){
+  if(!(laAdmin() || laLeaderCuaDuAn(mada))){ baoToast('Chỉ leader/admin được thêm việc','err'); return; }
+  uidDangSua=null; gocDangSua=null;
+  if($('xoaViec')) $('xoaViec').hidden=true;
+  $('tieuDeFormCV').textContent='🗒 Khai báo công việc';
+  $('guiViec').textContent='Ghi vào Sheets';
+  $('cv-mada').value=mada;
+  ['cv-phancap','cv-nhiemvu','cv-ghichu','cv-vuongmac','cv-tamngung'].forEach(id=>$(id).value='');
+  $('cv-uutien').value='Trung bình'; $('cv-trangthai').value='Chưa bắt đầu';
+  const fp=document.querySelector('#cv-han')._flatpickr; if(fp) fp.clear(); else $('cv-han').value='';
+  datNguoiForm('');
+  const km = khopMauVoiDuong(mada, segs);
+  setupMauForm(false);
+  if(km && $('cv-mau') && !$('cv-mau-group').hidden){     /* trùng mẫu → dùng khuôn, chọn sẵn đến nhánh */
+    $('cv-mau').value=String(km.mauIndex);
+    _mauChon=km.chon.slice(); _mauNhap=Object.assign({},km.nhap);
+    veCascade();
+  } else {                                                /* không trùng mẫu → tự do, điền sẵn đường dẫn */
+    if($('cv-mau')) $('cv-mau').value='__free';
+    apMauForm();
+    $('cv-phancap').value = segs.join(' / ');
+  }
+  apQuyenFormViec(mada);
+  $('cv-matkhau').value=maXacNhanCache;
+  $('msgViec').textContent='';
+  moOverlay('modalViec');
+}
+if($('ctx-them-viec')) $('ctx-them-viec').addEventListener('click', ()=>{
+  dongCtx();
+  if(!_ctxBranchKey) return;
+  const parts=_ctxBranchKey.split('/').filter(Boolean);
+  if(parts.length) moThemViecNhanh(parts[0], parts.slice(1));
+});
+
+let _gcUid=null;
+function moGhiChu(uid){
+  const v=NHIEM_VU.find(x=>x.uid===uid); if(!v) return;
+  _gcUid=uid;
+  if($('gcTitle')) $('gcTitle').textContent='📝 Ghi chú — '+tenViecNgan(v);
+  veGhiChu();
+  moOverlay('modalGhiChu');
+}
+function veGhiChu(){
+  const v=NHIEM_VU.find(x=>x.uid===_gcUid); if(!v || !$('gc-list')) return;
+  const ql=quanLyDuoc(v.mada);
+  const lines=String(v.ghichu||'').split('\n').map(s=>s.trim()).filter(Boolean);
+  $('gc-list').innerHTML = lines.length ? lines.map((ln,i)=>
+    '<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line)">'
+    +'<span style="color:var(--concrete);font-family:\'IBM Plex Mono\',monospace;font-size:11px;flex-shrink:0;width:18px;text-align:right">'+(i+1)+'</span>'
+    +'<span style="flex:1;font-size:14px;white-space:pre-wrap;word-break:break-word">'+thoatHTML(ln)+'</span>'
+    +(ql?'<button class="th-nut" type="button" data-gcdel="'+i+'" title="Xóa mẩu ghi chú này" style="flex-shrink:0;color:var(--red);border-color:var(--red);width:30px;padding:0">✕</button>':'')
+    +'</div>'
+  ).join('') : '<div style="color:var(--concrete);padding:12px 0">Chưa có ghi chú.</div>';
+  $('gc-list').querySelectorAll('[data-gcdel]').forEach(b=>b.addEventListener('click',()=>xoaMotGhiChu(+b.dataset.gcdel)));
+}
+function xoaMotGhiChu(idx){
+  const v=NHIEM_VU.find(x=>x.uid===_gcUid); if(!v) return;
+  if(!quanLyDuoc(v.mada)){ baoToast('Chỉ leader/admin được xóa ghi chú','err'); return; }
+  const lines=String(v.ghichu||'').split('\n').map(s=>s.trim()).filter(Boolean);
+  if(idx<0||idx>=lines.length) return;
+  const banCu=v.ghichu;
+  lines.splice(idx,1);
+  const moi=lines.join('\n');
+  v.ghichu=moi;                         /* áp ngay (lạc quan) */
+  veGhiChu(); veDanhSach(); if(!$('modalKanban').hidden) veKanban(); veViewPhu();
+  const mk=maGui();
+  const duLieu={ magoc:v.mada, phancapgoc:v.phancap||'', nvgoc:v.nhiemvu, nguoigoc:v.nguoi,
+    mada:v.mada, phancap:v.phancap||'', hangmuc:v.hangmuc||'', nhiemvu:v.nhiemvu, nguoi:v.nguoi,
+    uutien:v.uutien, han:v.han, trangthai:v.trangthai, ghichu:moi, vuongmac:v.vuongmac||'', tamngung:v.tamngung||'' };
+  fetch(LINK_APPS_SCRIPT,{method:'POST',body:JSON.stringify({type:'suanhiemvu',matkhau:mk,data:duLieu})})
+    .then(r=>r.json()).then(kq=>{ if(kq&&kq.ok){ nhoMaTrongPhien(mk); chamHoatDong(); lanGhiCuoi=Date.now(); baoToast('🗑 Đã xóa 1 ghi chú','ok'); }
+      else { v.ghichu=banCu; veGhiChu(); if(!$('modalKanban').hidden) veKanban(); baoToast('✖ Chưa xóa được: '+((kq&&kq.loi)||'lỗi'),'err'); } })
+    .catch(()=>{ v.ghichu=banCu; veGhiChu(); baoToast('✖ Mất kết nối — chưa xóa','err'); });
+}
+
 /* Chuyển màn hình */
 function doiView(v){
   if(laKhach() && v==='toi') v='duan';   /* Khách: Tab 3 khóa */
@@ -1364,8 +1482,6 @@ function veTongHop(){
   chuanBiCache();
   const fNguoi = $('thNguoi').value;
   const fText = boDau($('thTim').value);
-  const azMode = $('thSapAZ') && $('thSapAZ').getAttribute('aria-pressed')==='true';
-  const cmpTen = azMode ? (a,b)=>String(a||'').localeCompare(String(b||''),'vi',{sensitivity:'base'}) : soSanhTuNhien;
   window._anXongCay = $('thAnXong') && $('thAnXong').getAttribute('aria-pressed')==='true';
   const root = dungCay();
   /* Mặc định: gập hết — chỉ hiện cấp 1 (tên dự án). Người dùng tự mở nhánh khi cần. */
@@ -1416,7 +1532,7 @@ function veTongHop(){
       + '<span class="th-c-pct"><span class="th-bar"><span class="th-fill" style="width:'+p+'%;background:'+mauPct(p)+'"></span></span><span class="th-pct" style="color:'+mauPct(p)+'">'+p+'%</span></span></div>';
   }
   function walk(node, depth){
-    [...node.con.values()].sort((a,b)=>cmpTen(a.ten,b.ten)).forEach(c=>{
+    [...node.con.values()].sort((a,b)=>soSanhTuNhien(a.ten,b.ten)).forEach(c=>{
       if(!nhanhKhop(c, fNguoi, fText)) return;
       const soCon = c.con.size;
       const soViec = c.viec.length;
@@ -1429,7 +1545,7 @@ function veTongHop(){
       out.push(dongNhanh(c, depth));
       if(moNhanh.has(c.key)){
         walk(c, depth+1);                                   /* nhánh con */
-        c.viec.slice().sort((a,b)=>cmpTen(a.nhiemvu,b.nhiemvu)).forEach(v=>{   /* việc gắn trực tiếp */
+        c.viec.slice().sort((a,b)=>soSanhTuNhien(a.nhiemvu,b.nhiemvu)).forEach(v=>{   /* việc gắn trực tiếp */
           if(vietKhop(v, fNguoi, fText))
             out.push(dongLa(v.nhiemvu || '(việc chưa đặt tên)', v, depth+1));
         });
@@ -1484,12 +1600,6 @@ $('thCay').addEventListener('click', e=>{
 });
 $('thTim').addEventListener('input', veTongHop);
 $('thNguoi').addEventListener('change', veTongHop);
-if($('thSapAZ')) $('thSapAZ').addEventListener('click', ()=>{
-  const b=$('thSapAZ'); const on = b.getAttribute('aria-pressed')==='true';
-  b.setAttribute('aria-pressed', on?'false':'true');
-  b.textContent = on ? 'Sắp xếp A→Z' : '✓ Đang A→Z';
-  veTongHop();
-});
 $('thMoTatCa').addEventListener('click', ()=>{
   (function w(n){ n.con.forEach(c=>{ if(c.con.size || c.viec.length>1){ moNhanh.add(c.key); w(c);} }); })(dungCay());
   veTongHop();
