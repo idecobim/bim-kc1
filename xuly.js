@@ -1635,6 +1635,10 @@ function veViecCuaToi(){
   if(!quanLyChung && nguoiDangNhap){ selT.value = nguoiDangNhap.ten; }
   selT.disabled = !quanLyChung;
   selT.title = quanLyChung ? '' : 'Chỉ leader/quản trị mới xem được việc của người khác';
+  /* Thành viên thường luôn là chính mình → ẩn hẳn ô "Tôi là" cho gọn */
+  selT.style.display = quanLyChung ? '' : 'none';
+  const lblToi = document.querySelector('.toi-cong-cu .toi-lbl');
+  if(lblToi) lblToi.style.display = quanLyChung ? '' : 'none';
   nguoiCuaToi = selT.value;
   const wrap = $('toiNoiDung');
   if(!nguoiCuaToi){ wrap.innerHTML = '<div class="th-empty">Chọn tên bạn ở trên để xem việc được giao.</div>'; if($('toiLocDA')) $('toiLocDA').innerHTML='<option value="">Tất cả dự án</option>'; return; }
@@ -2057,7 +2061,11 @@ function bcDungCongCu(){
   bar.id = 'bcCongCu';
   bar.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 10px;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--paper)';
   bar.innerHTML =
-    '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:10.5px;color:var(--concrete);text-transform:uppercase;letter-spacing:.05em">Lọc theo hạn:</span>'
+    '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:10.5px;color:var(--concrete);text-transform:uppercase;letter-spacing:.05em">Phạm vi:</span>'
+    + '<button type="button" class="th-toggle" data-bc-loai="phong">Phòng</button>'
+    + '<button type="button" class="th-toggle" data-bc-loai="toi">Của tôi</button>'
+    + '<span style="flex-basis:100%;height:0"></span>'
+    + '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:10.5px;color:var(--concrete);text-transform:uppercase;letter-spacing:.05em">Lọc theo hạn:</span>'
     + '<button type="button" class="th-nut" data-bc-preset="qua">Tuần qua</button>'
     + '<button type="button" class="th-nut" data-bc-preset="nay">Tuần này</button>'
     + '<button type="button" class="th-nut" data-bc-preset="toi">Tuần tới (dự kiến)</button>'
@@ -2066,6 +2074,8 @@ function bcDungCongCu(){
     + '<span style="font-size:11px;color:var(--concrete)">đến</span><input type="date" id="bcDen" style="font-size:12px;padding:5px;border:1px solid var(--line);border-radius:4px;background:var(--white);color:var(--ink)">';
   ta.insertAdjacentElement('beforebegin', bar);
   bar.addEventListener('click', e=>{
+    const bl = e.target.closest('[data-bc-loai]');
+    if(bl){ _bcLoai = bl.dataset.bcLoai; bcCapNhatLoaiUI(); taoBaoCao(); return; }
     const b = e.target.closest('[data-bc-preset]'); if(!b) return;
     _bcKhoang = bcPreset(b.dataset.bcPreset);
     $('bcTu').value = inputTuNgay(_bcKhoang.tu); $('bcDen').value = inputTuNgay(_bcKhoang.den);
@@ -2078,14 +2088,21 @@ function bcDungCongCu(){
     }
   });
 }
+/* Cập nhật công tắc Phạm vi (Phòng / Của tôi) + tiêu đề cửa sổ báo cáo */
+function bcCapNhatLoaiUI(){
+  document.querySelectorAll('#bcCongCu [data-bc-loai]').forEach(b=>{
+    b.classList.toggle('on', b.dataset.bcLoai===_bcLoai);
+  });
+  if($('bcTitle')) $('bcTitle').textContent = _bcLoai==='toi' ? '📋 Báo cáo việc của tôi' : '📋 Báo cáo phòng';
+}
 function taoBaoCao(){
   const txt = _bcLoai==='toi' ? baoCaoCuaToi(_bcKhoang) : baoCaoPhong(_bcKhoang);
   $('bcNoiDung').value = txt; $('bcNoiDung').scrollTop = 0;
 }
 function moBaoCao(loai){
   _bcLoai = loai || 'phong';
-  if($('bcTitle')) $('bcTitle').textContent = _bcLoai==='toi' ? '📋 Báo cáo việc của tôi' : '📋 Báo cáo phòng';
   bcDungCongCu();
+  bcCapNhatLoaiUI();
   if($('bcTu')) $('bcTu').value = inputTuNgay(_bcKhoang.tu);
   if($('bcDen')) $('bcDen').value = inputTuNgay(_bcKhoang.den);
   taoBaoCao();
