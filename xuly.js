@@ -1,6 +1,8 @@
 /* ====== Trạng thái toàn cục ====== */
 let DU_AN = [];
 let NHIEM_VU = [];
+let cheDoDuAn = 'the';   /* 'the' = dạng thẻ, 'bang' = danh sách gọn 1 dòng/dự án */
+try{ cheDoDuAn = localStorage.getItem('cheDoDuAn') || 'the'; }catch(e){}
 let maXacNhanCache = '';
 /* Mã xác nhận nhớ trong phiên; tự xóa sau 30 phút KHÔNG hoạt động (hoặc khi tải lại trang) */
 let _henXoaMa = null;
@@ -261,49 +263,93 @@ function veDanhSach(){
   $('stSapHan').textContent = ds.filter(d=>{ const n = soNgayConLai(docNgay(d.hannop)); return n !== null && n <= 15; }).length;
   $('thongBaoTrong').hidden = ds.length > 0;
 
-  $('luoiDuAn').innerHTML = ds.map(d=>{
-    const pct = tinhTienDo(d.ma);
-    const cl = soNgayConLai(docNgay(d.hannop));
-    const sv = NHIEM_VU.filter(v => v.mada === d.ma).length;
-    const svCPC = NHIEM_VU.filter(v => v.mada === d.ma && chuaPhanCong(v)).length;
-    let hn = '<div class="deadline">Hạn nộp: —</div>';
-    if(cl !== null){
-      if(cl < 0)        hn = '<div class="deadline qua-han">▲ QUÁ HẠN ' + (-cl) + ' ngày (' + thoatHTML(d.hannop) + ')</div>';
-      else if(cl <= 15) hn = '<div class="deadline sap-han">● Còn ' + cl + ' ngày — hạn ' + thoatHTML(d.hannop) + '</div>';
-      else              hn = '<div class="deadline con-han">○ Hạn nộp: ' + thoatHTML(d.hannop) + ' (còn ' + cl + ' ngày)</div>';
-    } else if(d.hannop && d.hannop !== '-'){
-      hn = '<div class="deadline">Hạn nộp: ' + thoatHTML(d.hannop) + '</div>';
-    }
-    return `
-    <article class="card" data-ma="${thoatHTML(d.ma)}">
-      <div class="card-top">
-        <span class="card-ma">${thoatHTML(d.ma)}</span>
-        <span class="badge ${lopBadge(d.loai)}">${thoatHTML(d.loai) || '—'}</span>
-      </div>
-      <h2>${thoatHTML(d.ten)}</h2>
-      <div class="card-meta">
-        ${dongMeta('Giai đoạn', d.giaidoan)}
-        ${dongMeta('Vai trò', d.vaitro)}
-        ${dongMeta('Phụ trách', d.phutrach)}
-        ${d.leader ? dongMeta('Leader', d.leader) : ''}
-        <span class="m-lbl">Trạng thái</span>
-        <span>${d.trangthai ? '<span class="tt-chip ' + lopTrangThai(d.trangthai) + '">' + thoatHTML(d.trangthai) + '</span>' : '<span class="m-val trong">—</span>'}</span>
-      </div>
-      ${hn}
-      <div class="prog">
-        <div class="prog-head"><span>Tiến độ (theo việc hoàn thành)</span><span class="pct">${pct}%</span></div>
-        <div class="prog-track"><div class="prog-fill" style="width:${pct}%"></div><div class="prog-dash"></div></div>
-      </div>
-      <div class="tasks-summary" style="flex-wrap:wrap;gap:8px;align-items:center">
-        <span class="tasks-title">${sv} công việc${svCPC ? ' · <span style="color:var(--orange);font-weight:600" title="' + svCPC + ' việc chưa phân công người">⚠ ' + svCPC + ' chưa giao</span>' : ''}</span>
-        <span style="display:flex;gap:6px;flex-wrap:wrap;margin-left:auto">
-          <button class="btn-kanban" type="button" data-mosodo="${thoatHTML(d.ma)}">▦ Sơ đồ</button>
-          <button class="btn-kanban" type="button" data-mokanban="${thoatHTML(d.ma)}">Bảng việc →</button>
-        </span>
-      </div>
-    </article>`;
-  }).join('');
+  const luoi = $('luoiDuAn');
+  if(cheDoDuAn === 'bang'){
+    luoi.className = 'ds-bang';
+    luoi.innerHTML = dsDauBangGon() + ds.map(dongDuAnGon).join('');
+  } else {
+    luoi.className = 'grid';
+    luoi.innerHTML = ds.map(theDuAn).join('');
+  }
   if(typeof veCanhBao === 'function') veCanhBao();
+}
+function theDuAn(d){
+  const pct = tinhTienDo(d.ma);
+  const cl = soNgayConLai(docNgay(d.hannop));
+  const sv = NHIEM_VU.filter(v => v.mada === d.ma).length;
+  const svCPC = NHIEM_VU.filter(v => v.mada === d.ma && chuaPhanCong(v)).length;
+  let hn = '<div class="deadline">Hạn nộp: —</div>';
+  if(cl !== null){
+    if(cl < 0)        hn = '<div class="deadline qua-han">▲ QUÁ HẠN ' + (-cl) + ' ngày (' + thoatHTML(d.hannop) + ')</div>';
+    else if(cl <= 15) hn = '<div class="deadline sap-han">● Còn ' + cl + ' ngày — hạn ' + thoatHTML(d.hannop) + '</div>';
+    else              hn = '<div class="deadline con-han">○ Hạn nộp: ' + thoatHTML(d.hannop) + ' (còn ' + cl + ' ngày)</div>';
+  } else if(d.hannop && d.hannop !== '-'){
+    hn = '<div class="deadline">Hạn nộp: ' + thoatHTML(d.hannop) + '</div>';
+  }
+  return `
+  <article class="card" data-ma="${thoatHTML(d.ma)}">
+    <div class="card-top">
+      <span class="card-ma">${thoatHTML(d.ma)}</span>
+      <span class="badge ${lopBadge(d.loai)}">${thoatHTML(d.loai) || '—'}</span>
+    </div>
+    <h2>${thoatHTML(d.ten)}</h2>
+    <div class="card-meta">
+      ${dongMeta('Giai đoạn', d.giaidoan)}
+      ${dongMeta('Vai trò', d.vaitro)}
+      ${dongMeta('Phụ trách', d.phutrach)}
+      ${d.leader ? dongMeta('Leader', d.leader) : ''}
+      <span class="m-lbl">Trạng thái</span>
+      <span>${d.trangthai ? '<span class="tt-chip ' + lopTrangThai(d.trangthai) + '">' + thoatHTML(d.trangthai) + '</span>' : '<span class="m-val trong">—</span>'}</span>
+    </div>
+    ${hn}
+    <div class="prog">
+      <div class="prog-head"><span>Tiến độ (theo việc hoàn thành)</span><span class="pct">${pct}%</span></div>
+      <div class="prog-track"><div class="prog-fill" style="width:${pct}%"></div><div class="prog-dash"></div></div>
+    </div>
+    <div class="tasks-summary" style="flex-wrap:wrap;gap:8px;align-items:center">
+      <span class="tasks-title">${sv} công việc${svCPC ? ' · <span style="color:var(--orange);font-weight:600" title="' + svCPC + ' việc chưa phân công người">⚠ ' + svCPC + ' chưa giao</span>' : ''}</span>
+      <span style="display:flex;gap:6px;flex-wrap:wrap;margin-left:auto">
+        <button class="btn-kanban" type="button" data-mosodo="${thoatHTML(d.ma)}">▦ Sơ đồ</button>
+        <button class="btn-kanban" type="button" data-mokanban="${thoatHTML(d.ma)}">Bảng việc →</button>
+      </span>
+    </div>
+  </article>`;
+}
+/* ----- Chế độ "Danh sách gọn": mỗi dự án 1 dòng, xem được nhiều dự án cùng lúc kiểu bảng tính ----- */
+function dsDauBangGon(){
+  return `
+  <div class="ds-head">
+    <span class="ds-c">Mã</span><span class="ds-c">Tên dự án</span><span class="ds-c">Loại</span>
+    <span class="ds-c">Giai đoạn</span><span class="ds-c">Phụ trách</span><span class="ds-c">Trạng thái</span>
+    <span class="ds-c">Tiến độ</span><span class="ds-c">Hạn nộp</span><span class="ds-c">Việc</span><span class="ds-c"></span>
+  </div>`;
+}
+function dongDuAnGon(d){
+  const pct = tinhTienDo(d.ma);
+  const cl = soNgayConLai(docNgay(d.hannop));
+  const sv = NHIEM_VU.filter(v => v.mada === d.ma).length;
+  let hanCl = '', hanTxt = (d.hannop && d.hannop !== '-') ? thoatHTML(d.hannop) : '—';
+  if(cl !== null){
+    if(cl < 0){ hanCl = 'qua-han'; hanTxt = 'Quá ' + (-cl) + 'ng · ' + thoatHTML(d.hannop); }
+    else if(cl <= 15){ hanCl = 'sap-han'; hanTxt = 'Còn ' + cl + 'ng · ' + thoatHTML(d.hannop); }
+    else { hanCl = 'con-han'; }
+  }
+  return `
+  <div class="card ds-row" data-ma="${thoatHTML(d.ma)}">
+    <span class="ds-c ds-c-ma">${thoatHTML(d.ma)}</span>
+    <span class="ds-c ds-c-ten" title="${thoatHTML(d.ten)}">${thoatHTML(d.ten)}</span>
+    <span class="ds-c"><span class="badge ${lopBadge(d.loai)}">${thoatHTML(d.loai) || '—'}</span></span>
+    <span class="ds-c ds-c-mo">${thoatHTML(d.giaidoan) || '—'}</span>
+    <span class="ds-c ds-c-mo" title="${thoatHTML(d.phutrach)}">${thoatHTML(d.phutrach) || '—'}</span>
+    <span class="ds-c">${d.trangthai ? '<span class="tt-chip ' + lopTrangThai(d.trangthai) + '">' + thoatHTML(d.trangthai) + '</span>' : '—'}</span>
+    <span class="ds-c ds-c-pct"><span class="th-bar"><span class="th-fill" style="width:${pct}%;background:var(--orange)"></span></span><b>${pct}%</b></span>
+    <span class="ds-c ds-c-han ${hanCl}">${hanTxt}</span>
+    <span class="ds-c ds-c-mo">${sv}</span>
+    <span class="ds-c ds-c-act">
+      <button class="ds-icon" type="button" data-mosodo="${thoatHTML(d.ma)}" title="Sơ đồ tổng quan">▦</button>
+      <button class="ds-icon" type="button" data-mokanban="${thoatHTML(d.ma)}" title="Bảng việc">☰</button>
+    </span>
+  </div>`;
 }
 
 /* ====== KANBAN ====== */
@@ -876,6 +922,18 @@ $('guiViec').addEventListener('click', async ()=>{
 $('oTimKiem').addEventListener('input', veDanhSach);
 ['locLoai','locGiaiDoan','locTrangThai','sapXep'].forEach(id=>$(id).addEventListener('change', veDanhSach));
 $('nutLamMoi').addEventListener('click', taiDuLieu);
+function capNhatNutCheDoDuAn(){
+  const b = $('dsCheDoXem'); if(!b) return;
+  b.textContent = cheDoDuAn === 'bang' ? '▦ Dạng thẻ' : '☰ Danh sách gọn';
+  b.classList.toggle('on', cheDoDuAn === 'bang');
+}
+if($('dsCheDoXem')) $('dsCheDoXem').addEventListener('click', ()=>{
+  cheDoDuAn = cheDoDuAn === 'bang' ? 'the' : 'bang';
+  try{ localStorage.setItem('cheDoDuAn', cheDoDuAn); }catch(e){}
+  capNhatNutCheDoDuAn();
+  veDanhSach();
+});
+capNhatNutCheDoDuAn();
 if($('nutPhanTichSheet')) $('nutPhanTichSheet').addEventListener('click', ()=>{
   if(typeof LINK_SHEET_DASHBOARD!=='undefined' && LINK_SHEET_DASHBOARD) window.open(LINK_SHEET_DASHBOARD, '_blank', 'noopener');
 });
