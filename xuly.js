@@ -3,6 +3,7 @@ let DU_AN = [];
 let NHIEM_VU = [];
 let cheDoDuAn = 'the';   /* 'the' = dạng thẻ, 'bang' = danh sách gọn 1 dòng/dự án */
 try{ cheDoDuAn = localStorage.getItem('cheDoDuAn') || 'the'; }catch(e){}
+let locNhanhKey = '';    /* chip lọc nhanh trên tab Dự án: '', 'tre', 'saphan', 'chuagiao', 'ngung' */
 let maXacNhanCache = '';
 /* Mã xác nhận nhớ trong phiên; tự xóa sau 30 phút KHÔNG hoạt động (hoặc khi tải lại trang) */
 let _henXoaMa = null;
@@ -235,6 +236,37 @@ function dungBoLoc(){
   $('thanhCongCu').hidden = false; $('daiSoLieu').hidden = false;
 }
 
+/* ====== Lọc nhanh (chip) — học theo bộ lọc thông minh của Base.vn/Asana ====== */
+function viecTre(v){
+  if(dangNgung(v) || chuanCot(v.trangthai)==='Hoàn thành') return false;
+  const n = soNgayConLai(docNgay(v.han));
+  return n !== null && n < 0;
+}
+function demViecTreDA(ma){ return (_segViec.get(ma)||[]).filter(viecTre).length; }
+function demChuaGiaoDA(ma){ return (_segViec.get(ma)||[]).filter(chuaPhanCong).length; }
+function khopLocNhanh(d, key){
+  if(!key) return true;
+  if(key==='tre') return demViecTreDA(d.ma) > 0;
+  if(key==='saphan'){ const n = soNgayConLai(docNgay(d.hannop)); return n!==null && n<=15 && lopTrangThai(d.trangthai)!=='tt-xong'; }
+  if(key==='chuagiao') return demChuaGiaoDA(d.ma) > 0;
+  if(key==='ngung') return lopTrangThai(d.trangthai)==='tt-dung';
+  return true;
+}
+function veLocNhanh(dsGoc){
+  const el = $('locNhanh'); if(!el) return;
+  const dem = k => dsGoc.filter(d=>khopLocNhanh(d,k)).length;
+  const chips = [
+    ['', 'Tất cả', dsGoc.length],
+    ['tre', '🔴 Có việc trễ hạn', dem('tre')],
+    ['saphan', '⏳ Hạn nộp ≤ 15 ngày', dem('saphan')],
+    ['chuagiao', '⚠ Có việc chưa giao', dem('chuagiao')],
+    ['ngung', '⏸ Tạm ngưng', dem('ngung')]
+  ];
+  el.innerHTML = chips.map(([k,nhan,so]) =>
+    '<button type="button" class="k-chip'+(locNhanhKey===k?' active':'')+'" data-ln="'+k+'">'+nhan+' <span class="ln-so">'+so+'</span></button>').join('');
+  el.hidden = false;
+}
+
 /* ====== Vẽ danh sách dự án ====== */
 function dongMeta(nhan, giaTri){
   const co = giaTri && giaTri !== '-';
@@ -254,6 +286,10 @@ function veDanhSach(){
     const na = docNgay(a.hannop), nb = docNgay(b.hannop);
     return (na?na.getTime():Infinity) - (nb?nb.getTime():Infinity);
   });
+
+  veLocNhanh(ds);
+  if(locNhanhKey) ds = ds.filter(d => khopLocNhanh(d, locNhanhKey));
+  if($('nutNhanSu')) $('nutNhanSu').hidden = !(typeof laQuanLyChung==='function' && laQuanLyChung());
 
   $('stTong').textContent = ds.length;
   $('stTrienKhai').textContent = ds.filter(d => lopTrangThai(d.trangthai) === 'tt-chay').length;
@@ -934,6 +970,59 @@ if($('dsCheDoXem')) $('dsCheDoXem').addEventListener('click', ()=>{
   veDanhSach();
 });
 capNhatNutCheDoDuAn();
+
+/* Chip lọc nhanh tab Dự án */
+if($('locNhanh')) $('locNhanh').addEventListener('click', e=>{
+  const c = e.target.closest('[data-ln]'); if(!c) return;
+  locNhanhKey = c.dataset.ln || '';
+  veDanhSach();
+});
+
+/* ====== Khối lượng nhân sự (dành cho quản lý) ====== */
+function veNhanSu(){
+  chuanBiCache();
+  const tk = new Map();
+  const lay = ten => { if(!tk.has(ten)) tk.set(ten, {tong:0,chua:0,dang:0,duyet:0,xong:0,tre:0,ngung:0}); return tk.get(ten); };
+  NHIEM_VU.forEach(v=>{
+    if(!xemDuocDuAn(v.mada)) return;
+    const nguoi = v.nguoi.split(',').map(s=>s.trim()).filter(Boolean);
+    const cot = chuanCot(v.trangthai), tre = viecTre(v), ngung = dangNgung(v);
+    (nguoi.length ? nguoi : [CHUA_PC]).forEach(ten=>{
+      const o = lay(ten); o.tong++;
+      if(ngung){ o.ngung++; return; }
+      if(cot==='Hoàn thành') o.xong++;
+      else if(cot==='Trình duyệt KCS / TT') o.duyet++;
+      else if(cot==='Đang thực hiện / Chỉnh sửa') o.dang++;
+      else o.chua++;
+      if(tre) o.tre++;
+    });
+  });
+  const rows = [...tk.entries()].sort((a,b)=> b[1].tre - a[1].tre || b[1].tong - a[1].tong);
+  const head = '<div class="ns-row ns-head"><span>Nhân sự</span><span>Tổng</span><span>Chưa</span><span>Đang</span><span>Duyệt</span><span>Xong</span><span>Trễ</span><span>Hoàn thành</span></div>';
+  $('nsBody').innerHTML = head + (rows.length ? rows.map(([ten,o])=>{
+    const act = o.tong - o.ngung;
+    const p = act ? Math.round(o.xong/act*100) : 0;
+    const cpc = ten===CHUA_PC;
+    return '<div class="ns-row ns-click'+(cpc?' ns-cpc':'')+'" data-ns="'+thoatHTML(ten)+'" title="Bấm để xem danh sách việc">'
+      + '<span class="ns-ten">'+(cpc?'⚠ Chưa phân công':thoatHTML(ten))+(o.ngung?' <span class="ns-ngung" title="'+o.ngung+' việc tạm ngưng">⏸'+o.ngung+'</span>':'')+'</span>'
+      + '<span><b>'+o.tong+'</b></span><span>'+o.chua+'</span><span>'+o.dang+'</span><span>'+o.duyet+'</span>'
+      + '<span style="color:var(--green)">'+o.xong+'</span>'
+      + '<span style="color:'+(o.tre?'var(--red)':'var(--concrete)')+(o.tre?';font-weight:700':'')+'">'+o.tre+'</span>'
+      + '<span class="ns-bar-c"><span class="th-bar"><span class="th-fill" style="width:'+p+'%;background:'+mauPct(p)+'"></span></span><span class="ns-pct" style="color:'+mauPct(p)+'">'+p+'%</span></span>'
+      + '</div>';
+  }).join('') : '<div class="th-empty">Chưa có công việc nào.</div>');
+}
+if($('nutNhanSu')) $('nutNhanSu').addEventListener('click', ()=>{ veNhanSu(); moOverlay('modalNhanSu'); });
+if($('nsBody')) $('nsBody').addEventListener('click', e=>{
+  const r = e.target.closest('.ns-row.ns-click'); if(!r) return;
+  if(typeof laQuanLyChung==='function' && !laQuanLyChung()) return;
+  const ten = r.dataset.ns;
+  nguoiCuaToi = ten;
+  try{ localStorage.setItem('nguoiCuaToi', ten); }catch(x){}
+  const sel = $('toiNguoi'); if(sel) sel.value = ten;
+  $('modalNhanSu').hidden = true; moCuonNeuHetModal();
+  doiView('toi');
+});
 if($('nutPhanTichSheet')) $('nutPhanTichSheet').addEventListener('click', ()=>{
   if(typeof LINK_SHEET_DASHBOARD!=='undefined' && LINK_SHEET_DASHBOARD) window.open(LINK_SHEET_DASHBOARD, '_blank', 'noopener');
 });
@@ -1429,6 +1518,7 @@ function doiView(v){
   $('luoiDuAn').style.display      = v==='duan' ? '' : 'none';
   $('thongBaoTrong').style.display = v==='duan' ? '' : 'none';
   $('thanhCongCu').style.display   = v==='duan' ? '' : 'none';
+  if($('locNhanh')) $('locNhanh').style.display = v==='duan' ? '' : 'none';
   $('viewTongHop').hidden = v!=='tonghop';
   $('viewToi').hidden     = v!=='toi';
   veViewPhu();

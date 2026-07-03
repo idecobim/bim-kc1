@@ -20,7 +20,7 @@
 <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@3.0.0-beta.0/scroll-behaviour.min.js"></script>
 
 <!-- ===== 3 FILE CUA HE THONG ===== -->
-<link rel="stylesheet" href="giaodien.css?v=35">
+<link rel="stylesheet" href="giaodien.css?v=37">
 <script src="cauhinh.js?v=33"></script>
 <style>
   /* Khách (chỉ xem): ẩn mọi nút tạo/sửa và khóa Tab 3 */
@@ -122,7 +122,10 @@
     <option value="tiendo-desc">Sắp xếp: Tiến độ cao → thấp</option>
   </select>
   <button class="th-toggle" id="dsCheDoXem" type="button" title="Chuyển giữa xem Thẻ và Danh sách gọn (xem nhiều dự án cùng lúc hơn)">☰ Danh sách gọn</button>
+  <button class="th-toggle" id="nutNhanSu" type="button" hidden title="Xem khối lượng công việc từng người (dành cho quản lý)">👥 Nhân sự</button>
 </div>
+
+<div class="loc-nhanh" id="locNhanh" hidden></div>
 
 <div id="khuNoiDung">
   <div class="loading" id="dangTai">ĐANG ĐỒNG BỘ DỮ LIỆU TỪ GOOGLE SHEETS<div class="bar"></div></div>
@@ -375,6 +378,17 @@
   </div>
 </div>
 
+<!-- ===== Khối lượng nhân sự (quản lý) ===== -->
+<div class="modal-overlay" id="modalNhanSu" hidden>
+  <div class="modal" role="dialog" aria-labelledby="nsTitle" style="max-width:780px">
+    <div class="modal-head"><h3 id="nsTitle">👥 Khối lượng nhân sự</h3><button class="modal-close" type="button" data-dong>✕</button></div>
+    <div style="padding:14px 18px 6px">
+      <div id="nsBody"></div>
+      <p class="th-ghichu" style="border-top:none;padding:10px 2px">Tính trên các dự án bạn quản lý / tham gia · gồm cả việc hỗ trợ · không tính việc tạm ngưng vào %. Bấm vào một người để mở danh sách việc của người đó.</p>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modalBaoCao" hidden>
   <div class="modal" role="dialog" aria-labelledby="bcTitle">
     <div class="modal-head"><h2 id="bcTitle">📋 Báo cáo nhanh</h2><button class="modal-x" type="button" data-dong>✕</button></div>
@@ -394,6 +408,6 @@
   <span>Nguồn dữ liệu: Google Sheets · Tự làm mới mỗi 5 phút</span>
 </footer>
 
-<script src="xuly.js?v=50"></script>
+<script src="xuly.js?v=51"></script>
 </body>
 </html>
