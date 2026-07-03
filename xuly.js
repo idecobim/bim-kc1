@@ -172,9 +172,24 @@ function chuanHoaViec(row){
     ghichu: o['ghi chu'] || o['ghichu'] || '',
     vuongmac: o['vuong mac'] || o['vuongmac'] || o['vuong mac / kho khan'] || '',
     tamngung: o['tam ngung'] || o['tamngung'] || o['tam ngung / hoan'] || '',
-    lichsukcs: o['lich su kcs'] || o['lichsukcs'] || o['lich su'] || o['soat xet'] || o['lich su soat xet'] || ''
+    lichsukcs: o['lich su kcs'] || o['lichsukcs'] || o['lich su'] || o['soat xet'] || o['lich su soat xet'] || '',
+    capnhat: o['cap nhat'] || o['capnhat'] || o['cap nhat cuoi'] || o['lan sua cuoi'] || ''
   };
 }
+/* Tự gắn TÊN NGƯỜI ĐĂNG NHẬP vào mọi lệnh ghi gửi Apps Script — phục vụ cột "Cập nhật"
+   (dấu vết lần sửa cuối) và tab "NhatKy" (lịch sử chỉnh sửa theo tài khoản) phía Google Sheets.
+   Bọc fetch tại 1 chỗ để không phải sửa từng lệnh gửi; Apps Script cũ chưa nâng cấp sẽ bỏ qua trường này. */
+const _fetchGoc = window.fetch;
+window.fetch = function(url, opt){
+  try{
+    if(typeof url==='string' && url===LINK_APPS_SCRIPT && opt && opt.method==='POST' && typeof opt.body==='string'){
+      const b = JSON.parse(opt.body);
+      if(b && !b.nguoi) b.nguoi = (typeof nguoiDangNhap!=='undefined' && nguoiDangNhap) ? nguoiDangNhap.ten : '';
+      opt = Object.assign({}, opt, { body: JSON.stringify(b) });
+    }
+  }catch(e){ /* lỗi parse thì gửi nguyên bản */ }
+  return _fetchGoc.call(this, url, opt);
+};
 
 /* ====== Tải dữ liệu (PA2: đọc TRỰC TIẾP qua Apps Script doGet — dữ liệu LIVE, không còn cache CSV) ====== */
 /* Chỉ báo đồng bộ: đổi trạng thái ngay trên nút "Cập nhật dữ liệu" — không chiếm thêm chỗ, không xô lệch giao diện */
@@ -430,6 +445,7 @@ function veKanban(){
         <div class="k-card-meta">
           <span>👤 ${thoatHTML(v.nguoi)}</span>
           ${v.han && v.han !== '-' ? '<span style="color:var(--orange)">⏳ ' + thoatHTML(v.han) + '</span>' : ''}
+          ${v.capnhat ? '<span style="opacity:.7" title="Cập nhật gần nhất (bởi ai, lúc nào)">🕓 ' + thoatHTML(v.capnhat) + '</span>' : ''}
         </div>
       </div>`;
     }).join('');
@@ -1922,6 +1938,7 @@ function dongViecToi(v){
   if(v.ghichu) tipParts.push('Ghi chú: '+v.ghichu);
   if(v.vuongmac) tipParts.push('⚠ Vướng mắc: '+v.vuongmac);
   if(dangNgung(v) && String(v.tamngung).trim() && String(v.tamngung).trim()!=='1') tipParts.push('⏸ Tạm ngưng: '+v.tamngung);
+  if(v.capnhat) tipParts.push('🕓 Cập nhật cuối: '+v.capnhat);
   const tip = tipParts.length ? ' title="'+thoatHTML(tipParts.join('\n'))+'"' : '';
   const da = DU_AN.find(d=>d.ma===v.mada);
   const maChip = '<span class="toi-ma" title="'+thoatHTML(da&&da.ten?da.ten:v.mada)+'">'+thoatHTML(v.mada)+'</span>';
