@@ -1519,6 +1519,77 @@ if($('ctx-them-viec')) $('ctx-them-viec').addEventListener('click', ()=>{
   if(parts.length) moThemViecNhanh(parts[0], parts.slice(1));
 });
 
+/* ====== ĐỔI TÊN NHÁNH — sửa 1 lần, mọi công việc con/cháu tự đổi Phân cấp theo ======
+   Không cần sửa Apps Script: gửi TUẦN TỰ từng lệnh 'suanhiemvu' (mỗi việc 1 lệnh, chờ xong
+   mới gửi tiếp để không đụng độ khi ghi Sheet). Đứt giữa chừng thì chuột phải nhánh cũ làm lại
+   — phần đã đổi giữ nguyên, chỉ đổi tiếp phần còn lại. */
+if($('ctx-doi-ten-nhanh')) $('ctx-doi-ten-nhanh').addEventListener('click', async ()=>{
+  dongCtx();
+  if(!_ctxBranchKey) return;
+  const parts = _ctxBranchKey.split('/').filter(Boolean);
+  if(parts.length < 2) return;                    /* cấp 1 là mã dự án — không đổi ở đây */
+  const mada = parts[0];
+  const duongCap = parts.slice(1);                /* đường phân cấp tới nhánh */
+  const tenCu = duongCap[duongCap.length-1];
+  const doSau = duongCap.length - 1;              /* vị trí segment cần thay trong phân cấp */
+
+  const traLoi = await hoiNhap({
+    tieuDe: '✎ Đổi tên nhánh',
+    nhan: 'Đổi "'+tenCu+'" thành tên mới. Mọi công việc thuộc nhánh này (kể cả nhánh con) sẽ được cập nhật Phân cấp theo tên mới.',
+    giaTri: tenCu, goiY: 'Nhập tên nhánh mới...'
+  });
+  if(traLoi === null) return;
+  const tenMoi = String(traLoi).trim();
+  if(!tenMoi){ baoToast('✖ Tên nhánh không được để trống','err'); return; }
+  if(tenMoi.includes('/')){ baoToast('✖ Tên nhánh không được chứa dấu "/" (dấu này dùng để ngăn cấp)','err'); return; }
+  if(tenMoi === tenCu) return;
+
+  const khop = v => {
+    if(v.mada !== mada) return false;
+    const cap = tachCap(v.phancap);
+    if(cap.length < duongCap.length) return false;
+    return duongCap.every((s,i)=>cap[i]===s);
+  };
+  const ds = NHIEM_VU.filter(khop);
+  if(!ds.length){ baoToast('Nhánh này không có công việc nào','err'); return; }
+
+  const mk = maGui();
+  if(!mk){ baoToast('✖ Hãy đăng nhập lại','err'); return; }
+  if(!confirm('Đổi tên nhánh:\n"'+tenCu+'" → "'+tenMoi+'"\n\nSẽ cập nhật '+ds.length+' công việc trên Sheets (mỗi việc 1 lệnh, chạy lần lượt).')) return;
+
+  let xong = 0;
+  baoToast('⏳ Đang đổi tên nhánh… 0/'+ds.length, '', true);
+  for(const v of ds){
+    const cap = tachCap(v.phancap); cap[doSau] = tenMoi;
+    const phancapMoi = cap.join(' / ');
+    const data = {
+      mada: v.mada, phancap: phancapMoi, hangmuc: v.hangmuc||'', nhiemvu: v.nhiemvu||'', nguoi: v.nguoi||'',
+      uutien: v.uutien||'', han: v.han||'-', trangthai: v.trangthai||'', ghichu: v.ghichu||'',
+      vuongmac: v.vuongmac||'', tamngung: v.tamngung||'',
+      magoc: v.mada, nvgoc: v.nhiemvu||'', nguoigoc: v.nguoi||'', phancapgoc: v.phancap||''
+    };
+    try{
+      const res = await fetch(LINK_APPS_SCRIPT, { method:'POST', body: JSON.stringify({ type:'suanhiemvu', matkhau: mk, data }) });
+      const kq = await res.json();
+      if(!kq || !kq.ok) throw new Error((kq && kq.loi) || 'lỗi không xác định');
+      v.phancap = phancapMoi;                     /* từng việc lưu xong mới áp vào bộ nhớ */
+      xong++;
+      baoToast('⏳ Đang đổi tên nhánh… '+xong+'/'+ds.length, '', true);
+    }catch(err){
+      veViewPhu(); veDanhSach(); if(!$('modalKanban').hidden) veKanban();
+      baoToast('✖ Đổi được '+xong+'/'+ds.length+' việc thì gặp lỗi: '+err.message+'. Chuột phải nhánh tên cũ và làm lại để đổi nốt phần còn lại.', 'err');
+      return;
+    }
+  }
+  nhoMaTrongPhien(mk); chamHoatDong(); lanGhiCuoi = Date.now();
+  /* giữ trạng thái đang mở của nhánh theo key mới để cây không bị gập lại */
+  const keyCu = _ctxBranchKey;
+  const keyMoi = '/' + [mada].concat(duongCap.slice(0,-1)).concat([tenMoi]).join('/');
+  [...moNhanh].forEach(k=>{ if(k===keyCu || k.indexOf(keyCu+'/')===0) moNhanh.add(keyMoi + k.slice(keyCu.length)); });
+  veViewPhu(); veDanhSach(); if(!$('modalKanban').hidden) veKanban();
+  baoToast('✔ Đã đổi tên nhánh — cập nhật '+xong+' công việc', 'ok');
+});
+
 /* Chuyển màn hình */
 function doiView(v){
   if(laKhach() && v==='toi') v='duan';   /* Khách: Tab 3 khóa */
