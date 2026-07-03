@@ -177,19 +177,12 @@ function chuanHoaViec(row){
 }
 
 /* ====== Tải dữ liệu (PA2: đọc TRỰC TIẾP qua Apps Script doGet — dữ liệu LIVE, không còn cache CSV) ====== */
-/* Chỉ báo đồng bộ NHỎ, đặt ngay dưới nút "Cập nhật dữ liệu" — không đụng tới nội dung đang xem */
+/* Chỉ báo đồng bộ: đổi trạng thái ngay trên nút "Cập nhật dữ liệu" — không chiếm thêm chỗ, không xô lệch giao diện */
 function chiBaoDongBo(hien){
-  let el = $('dongBoNho');
-  if(!el){
-    const nut = $('nutLamMoi'); if(!nut) return;
-    el = document.createElement('span');
-    el.id = 'dongBoNho';
-    el.className = 'loading';
-    el.style.cssText = 'margin:6px 0 0;display:flex;align-items:center;justify-content:flex-end;gap:8px;font-size:11px;width:100%';
-    el.innerHTML = 'Đang đồng bộ <span class="bar" style="width:70px;height:3px;margin:0"></span>';
-    nut.insertAdjacentElement('afterend', el);   /* xuống dòng dưới nút trong .hd-sync */
-  }
-  el.style.display = hien ? 'flex' : 'none';
+  const nut = $('nutLamMoi'); if(!nut) return;
+  if(!chiBaoDongBo._goc) chiBaoDongBo._goc = nut.textContent;
+  nut.classList.toggle('dang-dong-bo', !!hien);
+  nut.textContent = hien ? '⟳ Đang đồng bộ…' : chiBaoDongBo._goc;
 }
 async function taiDuLieu(){
   if(!LINK_APPS_SCRIPT || LINK_APPS_SCRIPT.includes('DÁN_LINK')) return;
@@ -1921,8 +1914,8 @@ function dongViecToi(v){
   const capCuoi = capArr.slice(-1)[0] || '';
   const tenViec = v.nhiemvu || capCuoi || '(việc chưa đặt tên)';
   /* Nội dung có sẵn → hiện full phân cấp; trống (đã lấy level cuối làm tên) → bỏ level cuối khỏi đường dẫn */
+  /* Đường dẫn phân cấp không chiếm dòng riêng — hiện khi rê chuột vào tên việc */
   const duongHt = (v.nhiemvu ? capArr : capArr.slice(0, -1)).join(' / ');
-  const duong = duongHt ? '<div class="toi-path"><i>'+thoatHTML(duongHt)+'</i></div>' : '';
   const da = DU_AN.find(d=>d.ma===v.mada);
   const maChip = '<span class="toi-ma" title="'+thoatHTML(da&&da.ten?da.ten:v.mada)+'">'+thoatHTML(v.mada)+'</span>';
   const c = chuanCot(v.trangthai);
@@ -1941,8 +1934,8 @@ function dongViecToi(v){
     + '<div class="toi-noidung">'
       + '<div class="toi-dong1">'+maChip
       + (laMoi(v)?'<span class="badge-moi">• Mới</span>':'') + badgeHT
-      + '<span class="toi-tenviec">'+thoatHTML(tenViec)+'</span>'+hanTxt+cung+'</div>'
-      + duong + vm + tn + '</div>'
+      + '<span class="toi-tenviec"'+(duongHt?' title="'+thoatHTML(duongHt)+'"':'')+'>'+thoatHTML(tenViec)+'</span>'+hanTxt+cung+'</div>'
+      + vm + tn + '</div>'
     + '<button class="toi-pill" type="button" data-ttpick="'+v.uid+'" style="color:'+pillCol+';border-color:'+pillCol+'" title="Bấm để đổi trạng thái">'+pillTxt+'</button>'
     + '<button class="toi-vm-nut'+(v.vuongmac?' on':'')+'" type="button" data-vm="'+v.uid+'" title="Báo/gỡ vướng mắc">⚠</button>'
     + '<button class="toi-ls-nut" type="button" data-ls="'+v.uid+'" title="Lịch sử / Soát xét">💬'+(soLichSu(v)?'<span class="ls-dem">'+soLichSu(v)+'</span>':'')+'</button>'
