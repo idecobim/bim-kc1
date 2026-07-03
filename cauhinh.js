@@ -39,3 +39,16 @@ const DANH_SACH_NHAN_SU = [
 
 /* Danh sách TÊN (dùng cho các ô chọn người trong form) — tự dẫn xuất, đừng sửa tay */
 const TEN_NHAN_SU = DANH_SACH_NHAN_SU.map(function(u){ return u.ten; });
+
+/* ============================================================
+   ★ LINK "PHÂN TÍCH NÂNG CAO" (tùy chọn)
+   ------------------------------------------------------------
+   Tự tạo 1 tab riêng trong Google Sheet gốc (KHÔNG đụng tới 2 tab
+   Dự án / Nhiệm vụ mà Apps Script đang đọc), dùng Pivot Table,
+   Slicer, biểu đồ... để xem/tùy biến tổng quan theo ý bạn.
+   Mở tab đó trong Sheet → copy URL trên thanh địa chỉ (dạng
+   .../edit#gid=123456789) → dán vào đây.
+   Để trống "" nếu chưa tạo — nút sẽ tự ẩn.
+   Chỉ super_admin thấy nút này (dữ liệu phân tích sâu, không cho staff/khách).
+   ============================================================ */
+const LINK_SHEET_DASHBOARD = "";

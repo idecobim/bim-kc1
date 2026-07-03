@@ -876,6 +876,9 @@ $('guiViec').addEventListener('click', async ()=>{
 $('oTimKiem').addEventListener('input', veDanhSach);
 ['locLoai','locGiaiDoan','locTrangThai','sapXep'].forEach(id=>$(id).addEventListener('change', veDanhSach));
 $('nutLamMoi').addEventListener('click', taiDuLieu);
+if($('nutPhanTichSheet')) $('nutPhanTichSheet').addEventListener('click', ()=>{
+  if(typeof LINK_SHEET_DASHBOARD!=='undefined' && LINK_SHEET_DASHBOARD) window.open(LINK_SHEET_DASHBOARD, '_blank', 'noopener');
+});
 
 taoMultiSelect('ms-phutrach-container', 'da-phutrach');
 taoMultiSelect('ms-leader-container', 'da-leader');
@@ -2383,7 +2386,12 @@ function apQuyenFormViec(mada){
   datKhoaO(sel, !ql);
   if(!ql && sel && !sel.value && nguoiDangNhap){ sel.value = nguoiDangNhap.ten; }  /* thành viên tạo việc: tự là người chính */
 }
-function capNhatQuyen(){ document.body.classList.toggle('is-leader', laAdmin()); document.body.classList.toggle('is-khach', laKhach()); }
+function capNhatQuyen(){
+  document.body.classList.toggle('is-leader', laAdmin());
+  document.body.classList.toggle('is-khach', laKhach());
+  const npt = $('nutPhanTichSheet');
+  if(npt) npt.hidden = !(laAdmin() && typeof LINK_SHEET_DASHBOARD!=='undefined' && LINK_SHEET_DASHBOARD);
+}
 function dongBoQuyen(){
   if(!$('modalKanban').hidden && madaKanbanHienTai) datQuyenTheoDuAn(madaKanbanHienTai);
   else capNhatQuyen();
@@ -2421,7 +2429,7 @@ function dangNhap(){
 function dangXuat(){
   nguoiDangNhap=null; maXacNhanCache='';
   try{ localStorage.removeItem('phienDangNhap'); }catch(e){}
-  document.body.classList.remove('is-leader');
+  capNhatQuyen();
   const fn=$('footDangNhap'); if(fn) fn.textContent='';
   moOverlay('modalDangNhap');
 }
