@@ -303,14 +303,17 @@
   .toi-cong-cu select{font-family:'Be Vietnam Pro',sans-serif;font-size:13.5px;padding:7px 11px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer}
   .toi-tom{display:flex;gap:16px;flex-wrap:wrap;padding:12px 16px;font-family:'IBM Plex Mono',monospace;font-size:13px;border-bottom:1px solid var(--line);background:var(--paper)}
   .toi-da{padding:10px 16px 4px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--orange);font-weight:600}
-  .toi-viec{display:flex;align-items:center;gap:10px;padding:6px 14px;border-bottom:1px solid var(--line)}
-  .toi-viec:hover{background:var(--paper)}
-  .toi-noidung{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-  .toi-dong1{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-  .toi-ma{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--concrete);background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:1px 6px;white-space:nowrap}
-  .toi-path{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--concrete)}
-  .toi-tenviec{font-size:14px;color:var(--ink);font-weight:500}
-  .toi-han{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--orange)}
+  /* 1 việc = 1 dòng: [mã] [tên + huy hiệu]……[hạn][pill][nút] — các cột thẳng hàng để mắt quét dọc */
+  .toi-viec{display:flex;align-items:center;gap:8px;padding:5px 14px;border-bottom:1px solid var(--line)}
+  .toi-viec:hover{background:rgba(255,122,26,.06)}
+  .toi-ma{flex-shrink:0;max-width:150px;overflow:hidden;text-overflow:ellipsis;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--concrete);background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:1px 6px;white-space:nowrap}
+  .toi-tenviec{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px;color:var(--ink);font-weight:500}
+  .toi-han{flex-shrink:0;width:148px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--concrete)}
+  .toi-han.tre{color:var(--red);font-weight:700}
+  .toi-han.gan{color:var(--amber);font-weight:600}
+  .toi-uu{margin-right:5px;font-size:10px}
+  .toi-uu.cao{color:var(--red)}
+  .toi-uu.thap{color:var(--concrete);opacity:.7}
   .toi-tt{font-family:'Be Vietnam Pro',sans-serif;font-size:13px;padding:7px 10px;border:1px solid var(--line);background:var(--white);color:var(--ink);cursor:pointer;flex-shrink:0;max-width:180px}
 
   [data-theme="dark"] .view-tab{background:var(--white)}
@@ -365,7 +368,6 @@
   .toi-vm-nut{flex-shrink:0;border:1px solid var(--line);background:var(--white);color:var(--concrete);font-size:14px;line-height:1;padding:7px 9px;border-radius:2px;cursor:pointer}
   .toi-vm-nut.on{border-color:var(--red);color:var(--red);background:rgba(185,28,28,.08)}
   .toi-vm-nut:hover{border-color:var(--red);color:var(--red)}
-  .toi-vm{display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--red);margin-top:3px}
   .toi-viec.co-vm{border-left:3px solid var(--red)}
   .th-vm{color:var(--red);margin-right:4px;cursor:help}
   .th-leaf.co-vm .th-ten{color:var(--red)}
@@ -407,8 +409,8 @@
     .toi-vm-nut,.toi-tn-nut{width:40px;height:40px;font-size:17px}
     .toi-pill{height:40px}
     .toi-viec{gap:8px;padding:11px 12px}
-    .toi-path{font-size:10px}
-    .toi-tenviec{font-size:13.5px}
+    .toi-tenviec{font-size:13px}
+    .toi-han{width:auto;max-width:96px}
 
     /* Form/modal chiếm gần hết màn hình, 1 cột */
     .modal-body{grid-template-columns:1fr;gap:12px}
@@ -439,7 +441,6 @@
   .toi-tn-nut{flex-shrink:0;border:1px solid var(--line);background:var(--white);color:var(--concrete);font-size:14px;line-height:1;padding:7px 9px;border-radius:2px;cursor:pointer}
   .toi-tn-nut.on{border-color:var(--ink);color:var(--ink);background:var(--paper)}
   .toi-tn-nut:hover{border-color:var(--ink);color:var(--ink)}
-  .toi-tn{display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--concrete);margin-top:3px}
   .toi-viec.co-tn{opacity:.62}
   .toi-viec.co-tn .toi-pill{opacity:.8}
   .toi-nhom.ngung{background:var(--paper);color:var(--concrete)}

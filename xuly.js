@@ -1913,9 +1913,16 @@ function dongViecToi(v){
   const capArr = tachCap(v.phancap);
   const capCuoi = capArr.slice(-1)[0] || '';
   const tenViec = v.nhiemvu || capCuoi || '(việc chưa đặt tên)';
-  /* Nội dung có sẵn → hiện full phân cấp; trống (đã lấy level cuối làm tên) → bỏ level cuối khỏi đường dẫn */
-  /* Đường dẫn phân cấp không chiếm dòng riêng — hiện khi rê chuột vào tên việc */
+  /* Mọi thông tin gói trong 1 dòng (kiểu Linear/Base.vn):
+     [mã DA] [huy hiệu + cờ ưu tiên + tên việc]……[hạn nộp canh phải][pill][⚠][💬][⏸]
+     Chi tiết phụ (phân cấp, ghi chú, vướng mắc, tạm ngưng) dồn vào tooltip khi rê chuột. */
   const duongHt = (v.nhiemvu ? capArr : capArr.slice(0, -1)).join(' / ');
+  const tipParts = [];
+  if(duongHt) tipParts.push('Phân cấp: '+duongHt);
+  if(v.ghichu) tipParts.push('Ghi chú: '+v.ghichu);
+  if(v.vuongmac) tipParts.push('⚠ Vướng mắc: '+v.vuongmac);
+  if(dangNgung(v) && String(v.tamngung).trim() && String(v.tamngung).trim()!=='1') tipParts.push('⏸ Tạm ngưng: '+v.tamngung);
+  const tip = tipParts.length ? ' title="'+thoatHTML(tipParts.join('\n'))+'"' : '';
   const da = DU_AN.find(d=>d.ma===v.mada);
   const maChip = '<span class="toi-ma" title="'+thoatHTML(da&&da.ten?da.ten:v.mada)+'">'+thoatHTML(v.mada)+'</span>';
   const c = chuanCot(v.trangthai);
@@ -1923,23 +1930,34 @@ function dongViecToi(v){
   if(c==='Hoàn thành'){ pillTxt='Xong'; pillCol='var(--green)'; }
   else if(c==='Trình duyệt KCS / TT'){ pillTxt='Duyệt'; pillCol='var(--orange)'; }
   else if(c==='Đang thực hiện / Chỉnh sửa'){ pillTxt='Đang'; pillCol='var(--amber)'; }
-  const vm = v.vuongmac ? '<div class="toi-vm">⚠ '+thoatHTML(v.vuongmac)+'</div>' : '';
   const dongNghiep = (v.nguoi||'').split(',').map(s=>s.trim()).filter(Boolean).filter(n=>n!==nguoiCuaToi);
   const vaiTro = vaiTroNguoi(v, nguoiCuaToi);
-  const badgeHT = vaiTro==='ho' ? '<span class="badge-ht" title="Bạn là người hỗ trợ. Phụ trách chính: '+thoatHTML(nguoiChinhCua(v))+'">🤝 Hỗ trợ</span>' : '';
-  const cung = dongNghiep.length ? '<span class="toi-cung" title="Cùng làm việc này">👥 '+thoatHTML(dongNghiep.join(', '))+'</span>' : '';
-  const tn = dangNgung(v) ? '<div class="toi-tn">⏸ Tạm ngưng'+(String(v.tamngung).trim()&&String(v.tamngung).trim()!=='1'?': '+thoatHTML(v.tamngung):'')+'</div>' : '';
-  const hanTxt = (v.han && v.han!=='-') ? '<span class="toi-han">⏳ '+thoatHTML(v.han)+'</span>' : '';
+  const badgeHT = vaiTro==='ho' ? '<span class="badge-ht" title="Bạn là người hỗ trợ. Phụ trách chính: '+thoatHTML(nguoiChinhCua(v))+'">🤝</span>' : '';
+  const cung = dongNghiep.length ? '<span class="toi-cung" title="Cùng làm: '+thoatHTML(dongNghiep.join(', '))+'">👥'+dongNghiep.length+'</span>' : '';
+  /* Cờ ưu tiên: chỉ hiện khi khác Trung bình để không nhiễu */
+  const uuK = boDau(v.uutien);
+  const uu = uuK.includes('cao') ? '<span class="toi-uu cao" title="Ưu tiên cao">▲</span>'
+           : uuK.includes('thap') ? '<span class="toi-uu thap" title="Ưu tiên thấp">▽</span>' : '';
+  /* Hạn nộp: cột cố định canh phải — đỏ khi trễ, cam khi ≤7 ngày, không tô khi xong/ngưng */
+  let hanCell = '<span class="toi-han"></span>';
+  if(v.han && v.han!=='-'){
+    const n = soNgayConLai(docNgay(v.han));
+    const ketThuc = c==='Hoàn thành' || dangNgung(v);
+    let cls='', txt=thoatHTML(v.han);
+    if(!ketThuc && n!==null && n<0){ cls=' tre'; txt='trễ '+(-n)+'ng · '+txt; }
+    else if(!ketThuc && n!==null && n<=7){ cls=' gan'; txt='còn '+n+'ng · '+txt; }
+    hanCell = '<span class="toi-han'+cls+'">'+txt+'</span>';
+  }
   return '<div class="toi-viec'+(v.vuongmac?' co-vm':'')+(dangNgung(v)?' co-tn':'')+'" data-uid="'+v.uid+'">'
-    + '<div class="toi-noidung">'
-      + '<div class="toi-dong1">'+maChip
-      + (laMoi(v)?'<span class="badge-moi">• Mới</span>':'') + badgeHT
-      + '<span class="toi-tenviec"'+(duongHt?' title="'+thoatHTML(duongHt)+'"':'')+'>'+thoatHTML(tenViec)+'</span>'+hanTxt+cung+'</div>'
-      + vm + tn + '</div>'
+    + maChip
+    + '<span class="toi-tenviec"'+tip+'>'
+      + (laMoi(v)?'<span class="badge-moi">• Mới</span>':'') + badgeHT + uu
+      + thoatHTML(tenViec) + cung + '</span>'
+    + hanCell
     + '<button class="toi-pill" type="button" data-ttpick="'+v.uid+'" style="color:'+pillCol+';border-color:'+pillCol+'" title="Bấm để đổi trạng thái">'+pillTxt+'</button>'
-    + '<button class="toi-vm-nut'+(v.vuongmac?' on':'')+'" type="button" data-vm="'+v.uid+'" title="Báo/gỡ vướng mắc">⚠</button>'
+    + '<button class="toi-vm-nut'+(v.vuongmac?' on':'')+'" type="button" data-vm="'+v.uid+'" title="'+(v.vuongmac?'⚠ Vướng mắc: '+thoatHTML(v.vuongmac)+' — bấm để sửa/gỡ':'Báo vướng mắc')+'">⚠</button>'
     + '<button class="toi-ls-nut" type="button" data-ls="'+v.uid+'" title="Lịch sử / Soát xét">💬'+(soLichSu(v)?'<span class="ls-dem">'+soLichSu(v)+'</span>':'')+'</button>'
-    + '<button class="toi-tn-nut'+(dangNgung(v)?' on':'')+'" type="button" data-tn="'+v.uid+'" title="'+(dangNgung(v)?'Tiếp tục công việc':'Tạm ngưng công việc')+'">'+(dangNgung(v)?'▶':'⏸')+'</button></div>';
+    + '<button class="toi-tn-nut'+(dangNgung(v)?' on':'')+'" type="button" data-tn="'+v.uid+'" title="'+(dangNgung(v)?'⏸ Đang tạm ngưng — bấm để tiếp tục':'Tạm ngưng công việc')+'">'+(dangNgung(v)?'▶':'⏸')+'</button></div>';
 }
 function viecTrong(node){ return viecCuaNhanh(node); }
 function viecDangTreHan(v){ if(dangNgung(v) || chuanCot(v.trangthai)==='Hoàn thành') return false; const n=soNgayConLai(docNgay(v.han)); return n!==null && n<0; }
