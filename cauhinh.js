@@ -11,8 +11,8 @@ const LINK_CSV         = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRTmId
 const LINK_CSV_NHIEMVU = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRTmIdgavLyCkeO1yUx5CvRdkYLH7cCW8tYlJ1QaSbKSpalHUP9pIexdo1dbiC5skg5d4_4L6pCd4lr/pub?gid=2130907067&single=true&output=csv";
 const LINK_APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbyUcTHBeIsUGGitZUkRxpl3NEcwNzK0nSqgUD4Rg2__IB1q8m9KBVHImZrbY0UFrKRxgA/exec";
 
-const TEN_DON_VI = "Phòng BIM — KC1";
-const TRUONG_NHOM = "Phạm Anh Khoa";   /* Leader KC1 */
+const TEN_DON_VI = "BIM KẾT CẤU";
+const TRUONG_NHOM = "Phạm Anh Khoa";   /* Trưởng nhóm */
 
 /* Mã riêng để CHỈNH DEADLINE — GIỮ LẠI cho tương thích, nhưng từ bản này
    việc phân quyền dựa trên ĐĂNG NHẬP (role + leader dự án) bên dưới. */
@@ -34,7 +34,9 @@ const DANH_SACH_NHAN_SU = [
   { ten: "Vũ Minh Phúc",     pin: "16012001", role: "staff" },
   { ten: "Nguyễn Thành Cang", pin: "1111", role: "staff" },
   { ten: "Trần Khắc Trường",  pin: "0000", role: "staff" },
-  { ten: "Phan Gia Bảo",      pin: "2410", role: "staff" }
+  { ten: "Phan Gia Bảo",      pin: "2410", role: "staff" },
+  { ten: "Phạm Trung Hiếu",   pin: "0000", role: "staff" },
+  { ten: "Nguyễn Hoàng Hà",   pin: "0000", role: "staff" }
 ];
 
 /* Danh sách TÊN (dùng cho các ô chọn người trong form) — tự dẫn xuất, đừng sửa tay */
