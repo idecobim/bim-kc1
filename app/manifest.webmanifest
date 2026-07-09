@@ -1,0 +1,13 @@
+{
+  "name": "BIM KC1 — Công việc",
+  "short_name": "BIM KC1",
+  "description": "Quản lý công việc Phòng BIM — KC1",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F4F6FB",
+  "theme_color": "#FF6B2C",
+  "icons": [
+    { "src": "../favicon.png", "sizes": "any", "type": "image/png" }
+  ]
+}
