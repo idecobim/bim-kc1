@@ -77,7 +77,25 @@ header{display:flex;align-items:center;gap:10px;padding:14px 2px 10px;position:s
 #fab{position:fixed;right:18px;bottom:calc(86px + env(safe-area-inset-bottom));z-index:49;width:58px;height:58px;border-radius:19px;
   background:var(--cam);color:#fff;font-size:28px;font-weight:400;box-shadow:0 10px 26px rgba(255,107,44,.45);display:flex;align-items:center;justify-content:center}
 #fab:active{transform:scale(.93)}
-@media(min-width:900px){ #fab{right:calc(50vw - 430px + 18px)} }
+
+.da-luoi{display:grid;grid-template-columns:1fr;gap:12px}
+.da-luoi .khoi{margin-bottom:0}
+
+/* ===== DESKTOP: mở rộng toàn màn hình — nav thành thanh dọc bên trái ===== */
+@media(min-width:1000px){
+  body{padding-left:96px;padding-bottom:24px}
+  #app{max-width:1280px;padding:0 26px}
+  #navDuoi{left:0;right:auto;top:0;bottom:0;width:96px;flex-direction:column;justify-content:flex-start;gap:8px;
+    padding:20px 10px;border-top:none;border-right:1px solid var(--vien);box-shadow:none}
+  .nav-nut{max-width:none;width:100%;flex:0 0 auto;padding:11px 4px;font-size:11px;border-radius:14px}
+  .nav-nut .ni{font-size:22px}
+  .nav-nut.chon{background:var(--cam-nhat)}
+  #fab{right:30px;bottom:30px}
+  .cot2{column-count:2;column-gap:14px}
+  .cot2>.khoi{break-inside:avoid}
+  .da-luoi{grid-template-columns:repeat(auto-fill,minmax(360px,1fr))}
+}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--cam);outline-offset:2px}
 
 /* ============ THẺ / DANH SÁCH ============ */
 .khoi{background:var(--the);border:1px solid var(--vien);border-radius:var(--r);box-shadow:var(--bong);overflow:hidden;margin-bottom:14px}
@@ -240,8 +258,8 @@ textarea.sh-o{resize:vertical;min-height:64px}
       <div class="hd-donvi" id="hdDonVi"></div>
       <div class="hd-tab" id="hdTab">Hôm nay</div>
     </div>
-    <button class="hd-nut" id="nutLamMoi" title="Cập nhật dữ liệu">⟳</button>
-    <button class="avatar" id="nutAvatar" title="Tài khoản"></button>
+    <button class="hd-nut" id="nutLamMoi" title="Cập nhật dữ liệu" aria-label="Cập nhật dữ liệu">⟳</button>
+    <button class="avatar" id="nutAvatar" title="Tài khoản" aria-label="Tài khoản và cài đặt"></button>
   </header>
   <main id="noiDung"></main>
 </div>
@@ -252,13 +270,13 @@ textarea.sh-o{resize:vertical;min-height:64px}
   <button class="nav-nut an" data-tab="nhom" id="navNhom"><span class="ni">👥</span>Nhóm</button>
   <button class="nav-nut" data-tab="tim"><span class="ni">🔍</span>Tìm</button>
 </nav>
-<button id="fab" class="an" title="Giao việc mới">＋</button>
+<button id="fab" class="an" title="Giao việc mới" aria-label="Giao việc mới">＋</button>
 
 <div id="sheetNen"></div>
 <div id="sheetHop"></div>
 <div id="toast"></div>
 
-<script src="../cauhinh.js"></script>
+<script src="../cauhinh.js?v=34"></script>
 <script>
 /* ================================================================
    BIM KC1 — APP CÔNG VIỆC (bản mới, mobile-first)
@@ -361,6 +379,7 @@ const suaDuocViec = v => !laKhach() && (laLeaderDA(v.mada) || (USER && v.nguoi.s
 
 /* ---------- Đăng nhập (dùng chung phiên với bản cũ) ---------- */
 function khoiDong(){
+  document.title = TEN_DON_VI + ' — Công việc';
   $('dnDonVi').textContent = TEN_DON_VI;
   $('hdDonVi').textContent = TEN_DON_VI;
   DANH_SACH_NHAN_SU.forEach(u=>$('dnTen').add(new Option(u.ten,u.ten)));
@@ -466,13 +485,15 @@ function veHomNay(){
       +'<div class="tt-o"><b>'+chuaXong.length+'</b><span>Đang mở</span></div>'
       +'<div class="tt-o o-xanh"><b>'+xong.length+'</b><span>Đã xong</span></div>'
     +'</div>'
+    +'<div class="cot2">'
     + khoiViec('🔴 Trễ hạn','d-do',sxHan(tre),true,true)
     + khoiViec('⚠️ Vướng mắc','d-vang',vm.filter(v=>!tre.includes(v)),true,true)
     + khoiViec('🟠 Tuần này','d-vang',sxHan(tuan),true,true)
     + khoiViec('🔵 Sắp tới / chưa hẹn','d-mo',sxHan(conlai),true,conlai.length<=8)
     + khoiViec('⏸ Tạm ngưng','d-mo',ngungDs,true,false)
     + khoiViec('✅ Đã hoàn thành','d-xanh',xong,true,false)
-    + (cua.length? '' : '<div class="khoi"><div class="trong"><span class="to">🎉</span>Bạn chưa được giao việc nào.<br>Bấm nút ＋ để tự tạo việc cho mình.</div></div>');
+    +'</div>'
+    + (cua.length? '' : '<div class="khoi"><div class="trong"><span class="to">🎉</span>Bạn chưa được giao việc nào.'+(DUAN.filter(d=>xemDuocDA(d.ma)).length?'<br>Bấm nút ＋ để tự tạo việc cho mình.':'<br>Hãy sang tab <b>Dự án</b> để bắt đầu xây dựng không gian làm việc mới.')+'</div></div>');
 }
 const sxHan = ds => [...ds].sort((a,b)=>{const x=docNgay(a.han),y=docNgay(b.han);return (x?x:Infinity)-(y?y:Infinity);});
 
@@ -493,11 +514,12 @@ function veDuAn(){
       +'<div class="da-meta mono">'+esc(d.ma)+' · '+vs.length+' việc'+(tre?' · <span class="tre-nho">'+tre+' trễ</span>':'')+(boDau(d.trangthai).includes('ngung')?' · ⏸':'')+'</div></div>'
       +'<div class="da-pct"><b>'+pct+'%</b><div class="thanh" style="width:52px"><i style="width:'+pct+'%"></i></div></div></div>';
   };
+  const card = (d,i)=>'<div class="khoi">'+ve1(d,i)+'</div>';
   $('noiDung').innerHTML =
     (laAdmin()||laQuanLy() ? '<button class="sh-nutphu" style="margin:0 0 12px" id="nutThemDA">＋ Thêm dự án mới</button>' : '')
-    +(dang.length?'<div class="khoi">'+dang.map(ve1).join('')+'</div>':'')
-    +(khac.length?'<div class="khoi-dau d-mo" style="padding:4px 4px 8px">Tạm ngưng / hoàn thiện</div><div class="khoi">'+khac.map((d,i)=>ve1(d,i+2)).join('')+'</div>':'')
-    +(!ds.length?'<div class="khoi"><div class="trong"><span class="to">📁</span>Chưa có dự án nào bạn tham gia.</div></div>':'');
+    +(dang.length?'<div class="da-luoi" style="margin-bottom:14px">'+dang.map(card).join('')+'</div>':'')
+    +(khac.length?'<div class="khoi-dau d-mo" style="padding:4px 4px 8px">Tạm ngưng / hoàn thiện</div><div class="da-luoi">'+khac.map((d,i)=>card(d,i+2)).join('')+'</div>':'')
+    +(!ds.length?'<div class="khoi"><div class="trong"><span class="to">🚀</span><b>Không gian làm việc mới đang chờ bạn</b><br>Chưa có dự án nào — '+(laAdmin()?'bấm <b>＋ Thêm dự án mới</b> phía trên để tạo dự án đầu tiên (~30 giây).':'chờ quản trị viên tạo dự án đầu tiên.')+'</div></div>':'');
   const nta=$('nutThemDA'); if(nta) nta.addEventListener('click',()=>sheetDuAn(null));
 }
 function veDuAnChiTiet(ma){
@@ -573,11 +595,13 @@ function veNguoi(ten){
   $('noiDung').innerHTML =
     '<div class="trangcon-dau"><button class="nut-lui" id="nutLui">←</button>'
     +'<div class="tc-title"><h2>'+(chua?'⚠ Việc chưa phân công':esc(ten))+'</h2><p>'+cua.length+' việc · '+tre.length+' trễ hạn</p></div></div>'
+    +'<div class="cot2">'
     + khoiViec('🔴 Trễ hạn','d-do',sxHan(tre),true,true)
     + khoiViec('🟠 Tuần này','d-vang',sxHan(tuan),true,true)
     + khoiViec('🔵 Sắp tới / chưa hẹn','d-mo',sxHan(conlai),true,true)
     + khoiViec('⏸ Tạm ngưng','d-mo',cua.filter(v=>ngung(v)&&bacTT(v.trangthai)!==3),true,false)
     + khoiViec('✅ Đã hoàn thành','d-xanh',cua.filter(v=>bacTT(v.trangthai)===3),true,false)
+    +'</div>'
     + (!cua.length?'<div class="khoi"><div class="trong"><span class="to">🎉</span>Không có việc nào.</div></div>':'');
   $('nutLui').addEventListener('click',()=>{ NGUOI_XEM=null; veTab(); });
 }
