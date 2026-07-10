@@ -185,6 +185,10 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
   #sheetHop{left:50%;right:auto;bottom:auto;top:50%;width:520px;max-height:82vh;border-radius:20px;
     transform:translate(-50%,-46%) scale(.97);opacity:0;transition:.2s}
   #sheetHop.mo{transform:translate(-50%,-50%) scale(1);opacity:1}
+  /* Lịch sử = panel trượt từ bên phải, kiểu ngăn chat */
+  #sheetHop.drawer{left:auto;right:0;top:0;bottom:0;width:400px;max-width:92vw;max-height:100vh;height:100vh;
+    border-radius:18px 0 0 18px;transform:translateX(104%);opacity:1;transition:transform .25s cubic-bezier(.32,.72,.35,1)}
+  #sheetHop.drawer.mo{transform:translateX(0)}
 }
 .keo{width:40px;height:4px;border-radius:99px;background:var(--vien);margin:6px auto 12px}
 .sh-title{font-size:17px;font-weight:800;margin-bottom:2px;padding-right:30px}
@@ -249,6 +253,13 @@ textarea.sh-o{resize:vertical;min-height:64px}
 .v-more:active{background:var(--nen);transform:scale(.9)}
 .viec.co-vm{box-shadow:inset 3px 0 0 var(--vang)}
 .viec.co-tn{opacity:.62}
+.viec{align-items:flex-start}
+.v-han,.chip-tt,.v-more{margin-top:1px}
+/* Ghi chú tiến độ mới nhất hiện trực tiếp trên dòng việc */
+.v-note{display:block;font-size:11.5px;color:var(--muc);margin-top:3px;line-height:1.35;padding:4px 8px;background:var(--nen);border-radius:7px;border:1px solid var(--vien)}
+.v-note .d{color:var(--xanh);font-weight:700} .v-note .n{color:var(--vang);font-weight:700}
+.v-note b{white-space:normal}
+.v-note-row{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* ============ LỌC DỰ ÁN (Hôm nay) ============ */
 .loc-da{display:flex;align-items:center;gap:8px;margin:0 0 14px}
@@ -567,9 +578,14 @@ function dongViec(v, hienDA){
   const hoTro = v.nguoi.split(',').map(s=>s.trim()).filter(Boolean).slice(1);
   const nguoiTxt = hienDA ? '' : (v.nguoi.split(',')[0].trim() ? tenNgan(v.nguoi.split(',')[0].trim())+(hoTro.length?' +'+hoTro.length:'') : '⚠ chưa giao');
   const phu = [hienDA?v.mada:'', duongCap(v), nguoiTxt].filter(Boolean).join(' · ');
+  const gc = ghiChuMoiNhat(v);
+  const note = (gc && (gc.da||gc.no)) ? '<span class="v-note">'
+      + (gc.da?'<span class="v-note-row"><span class="d">✅ Đã:</span> '+esc(gc.da)+'</span>':'')
+      + (gc.no?'<span class="v-note-row"><span class="n">⏳ Nợ:</span> '+esc(gc.no)+'</span>':'')
+      + '</span>' : '';
   return '<div class="viec'+(v.vuongmac?' co-vm':'')+(ngung(v)?' co-tn':'')+'" data-uid="'+v.uid+'">'
     + '<div class="v-than"><span class="v-ten">'+co+esc(tenViec(v))+'</span>'
-    + (phu?'<span class="v-phu mono">'+esc(phu)+'</span>':'') + '</div>'
+    + (phu?'<span class="v-phu mono">'+esc(phu)+'</span>':'') + note + '</div>'
     + '<span class="v-han '+h.cls+'">'+(h.txt?esc(h.txt)+'<br>':'')+'<span style="opacity:.7">'+esc(h.day)+'</span></span>'
     + '<button class="chip-tt tt-'+b+'" data-tt="'+v.uid+'" title="Đổi trạng thái">'+TT_NHAN[b]+'</button>'
     + (laKhach()?'':'<button class="v-more" data-more="'+v.uid+'" aria-label="Hành động nhanh" title="Trao đổi / Vướng mắc / Tạm ngưng">⋯</button>')
@@ -587,10 +603,93 @@ function sheetHanhDong(v){
     const hd=e.target.closest('[data-hd]'); if(!hd) return;
     dongSheet();
     const t=hd.dataset.hd;
-    setTimeout(()=>{ if(t==='ts') sheetChiTiet(v,true); else if(t==='vm') sheetVuongMac(v); else if(t==='tn') sheetTamNgung(v); else sheetChiTiet(v); },250);
+    setTimeout(()=>{ if(t==='ts') sheetLichSu(v); else if(t==='vm') sheetVuongMac(v); else if(t==='tn') sheetTamNgung(v); else sheetChiTiet(v); },250);
   };
 }
-function soLichSu(v){ return String(v.lichsukcs||'').split('|').map(x=>x.trim()).filter(Boolean).length; }
+/* ---- Lịch sử tiến độ (đã làm / còn nợ) ---- */
+function parseLS(raw){
+  return String(raw||'').split('|').map(x=>x.trim()).filter(Boolean).map(x=>{
+    const m = x.match(/^\[(.+?)\]:\s*([\s\S]*)$/);
+    return { dau: m?m[1]:'', noi: m?m[2]:x };
+  });
+}
+function soLichSu(v){ return parseLS(v.lichsukcs).length; }
+function docGhi(b){
+  const da=(b.match(/✅ Đã(?:[^:\n]*):\s*([^\n]*)/)||[])[1];
+  const no=(b.match(/⏳ Còn(?:[^:\n]*):\s*([^\n]*)/)||[])[1];
+  const clean=s=>{ s=(s||'').trim(); return (s==='—'||s==='-')?'':s; };
+  return { da:clean(da), no:clean(no) };
+}
+/* ghi chú tiến độ mới nhất (đã làm / còn nợ) để hiện trực tiếp trên dòng việc */
+function ghiChuMoiNhat(v){
+  const items=parseLS(v.lichsukcs);
+  for(let i=items.length-1;i>=0;i--){ const g=docGhi(items[i].noi); if(g.da||g.no) return g; }
+  return null;
+}
+const sanitizeGhi = s => String(s||'').replace(/\|/g,'/').trim();
+function entryTienDo(bMoi, da, no){
+  return '['+nhanTG()+' - '+USER.ten+']: → '+TT_NHAN[bMoi]
+    +'\n✅ Đã làm: '+(da||'—')+'\n⏳ Còn nợ: '+(no||'—');
+}
+async function luuTienDo(v, bMoi, da, no){
+  const ttCu=v.trangthai, lsCu=v.lichsukcs||'';
+  const entry=entryTienDo(bMoi, da, no);
+  v.trangthai=TT[bMoi];
+  v.lichsukcs = lsCu?(lsCu+' | '+entry):entry;
+  veTab(); rung(12);
+  try{
+    await goiAS('sua_trangthai_nhiemvu',{mada:v.mada,trangthai:TT[bMoi],items:[{nhiemvu:v.nhiemvu,nguoi:v.nguoi,phancap:v.phancap}]});
+  }catch(e){ v.trangthai=ttCu; v.lichsukcs=lsCu; veTab(); return toast('✖ Chưa đổi được trạng thái: '+e.message,'loi'); }
+  try{
+    const kq=await goiAS('themlichsu',{magoc:v.mada,nvgoc:v.nhiemvu,nguoigoc:v.nguoi,phancapgoc:v.phancap||'',mada:v.mada,entry});
+    if(kq.lichsu){ v.lichsukcs=kq.lichsu; veTab(); }
+    toast('✓ Đã cập nhật → '+TT_NHAN[bMoi],'ok');
+  }catch(e){ toast('⚠ Đã đổi trạng thái, nhưng ghi chú chưa lưu được','loi'); }
+}
+/* Sheet nhập 2 ghi chú khi đổi trạng thái */
+function sheetGhiTienDo(v, bMoi){
+  const gc=ghiChuMoiNhat(v);
+  moSheet('<div class="sh-title">Cập nhật tiến độ → '+TT_NHAN[bMoi]+'</div>'
+    +'<div class="sh-phu">'+esc(tenViec(v))+'</div>'
+    +(gc&&gc.no?'<div style="font-size:12px;color:var(--mo);margin-bottom:6px">Lần trước còn nợ: <b style="color:var(--vang)">'+esc(gc.no)+'</b></div>':'')
+    +'<label class="sh-nhan">✅ Đã thực hiện (ở lần cập nhật này)</label><textarea class="sh-o" id="gtDa" placeholder="VD: Đã dựng xong dầm, đã soát nội bộ..."></textarea>'
+    +'<label class="sh-nhan">⏳ Còn nợ / còn lại</label><textarea class="sh-o" id="gtNo" placeholder="VD: Còn thiếu mặt cắt mối nối, chờ số liệu..."></textarea>'
+    +'<p id="gtCanh" class="an" style="color:var(--vang);font-size:12.5px;font-weight:600;margin:8px 0 0">⚠ Bạn chưa ghi đã làm gì / còn nợ gì — nhóm sẽ khó nắm tiến độ. Bấm lần nữa để vẫn lưu.</p>'
+    +'<button class="sh-nutchinh" id="gtLuu">Lưu cập nhật</button>'
+    +'<button class="sh-nutphu" id="gtLS">🕓 Xem lịch sử'+(soLichSu(v)?' ('+soLichSu(v)+')':'')+'</button>');
+  setTimeout(()=>$('gtDa').focus(),300);
+  let daCanh=false;
+  $('gtLS').onclick=()=>{ dongSheet(); setTimeout(()=>sheetLichSu(v),250); };
+  $('gtLuu').onclick=async()=>{
+    const da=sanitizeGhi($('gtDa').value), no=sanitizeGhi($('gtNo').value);
+    if(!da && !no && !daCanh){ daCanh=true; $('gtCanh').classList.remove('an'); $('gtLuu').textContent='Vẫn lưu (chưa ghi chú)'; rung(20); return; }
+    dongSheet();
+    await luuTienDo(v, bMoi, da, no);
+  };
+}
+/* Panel lịch sử kiểu chat, trượt từ bên phải (desktop) / lên (mobile) */
+function sheetLichSu(v){
+  const render=()=>{ const items=parseLS(v.lichsukcs);
+    return items.length ? items.map(it=>'<div class="ls-muc"><div class="ls-dau">'+esc(it.dau)+'</div><div class="ls-noi">'+esc(it.noi)+'</div></div>').join('')
+      : '<div class="ls-trong">Chưa có lịch sử nào.<br>Lịch sử tự ghi khi bạn đổi trạng thái hoặc thêm trao đổi.</div>'; };
+  moSheet('<div class="sh-title">🕓 Lịch sử & trao đổi</div><div class="sh-phu">'+esc(tenViec(v))+'</div>'
+    +'<div class="ls-khung" id="lsThread" style="max-height:calc(100vh - 210px)">'+render()+'</div>'
+    +(!laKhach()?'<div class="ls-gui"><input class="sh-o" id="lsMoi" placeholder="Thêm trao đổi / ghi chú..." autocomplete="off"><button id="lsGui">Gửi</button></div>':''), true);
+  const th=$('lsThread'); th.scrollTop=th.scrollHeight;
+  const g=$('lsGui');
+  if(g){
+    const gui=async()=>{
+      const t=sanitizeGhi($('lsMoi').value); if(!t) return;
+      const entry='['+nhanTG()+' - '+USER.ten+']: '+t, lsCu=v.lichsukcs||'';
+      v.lichsukcs=lsCu?(lsCu+' | '+entry):entry; $('lsMoi').value='';
+      th.insertAdjacentHTML('beforeend','<div class="ls-muc"><div class="ls-dau">'+esc(nhanTG()+' - '+USER.ten)+'</div><div class="ls-noi">'+esc(t)+'</div></div>'); th.scrollTop=th.scrollHeight;
+      try{ const kq=await goiAS('themlichsu',{magoc:v.mada,nvgoc:v.nhiemvu,nguoigoc:v.nguoi,phancapgoc:v.phancap||'',mada:v.mada,entry}); if(kq.lichsu) v.lichsukcs=kq.lichsu; veTab(); }
+      catch(e){ v.lichsukcs=lsCu; toast('✖ Chưa gửi được: '+e.message,'loi'); }
+    };
+    g.onclick=gui;
+    $('lsMoi').addEventListener('keydown',e=>{ if(e.key==='Enter') gui(); });
+  }
+}
 function khoiViec(tieuDe, mauCls, ds, hienDA, moSan){
   if(!ds.length) return '';
   const id = 'k'+Math.random().toString(36).slice(2,8);
@@ -894,8 +993,9 @@ function veKQ(){
 
 /* ================= SHEET (bảng trượt) ================= */
 let sheetDangMo=false;
-function moSheet(html){
+function moSheet(html, drawer){
   $('sheetHop').onclick = null;   /* xóa handler của sheet trước, tránh dính chéo */
+  $('sheetHop').classList.toggle('drawer', !!drawer);
   $('sheetHop').innerHTML = '<div class="keo"></div><button class="sh-dong" onclick="dongSheet()">✕</button>'+html;
   $('sheetNen').classList.add('mo'); $('sheetHop').classList.add('mo');
   document.body.classList.add('khoa');
@@ -923,9 +1023,11 @@ function sheetTrangThai(v){
       +(i===b?'<span class="tick">✓</span>':'')+'</button>').join('')
     +'<button class="sh-nutphu" data-hd="hd" style="margin-top:6px">⋯ Trao đổi · Vướng mắc · Tạm ngưng · Chi tiết</button>'
   );
-  $('sheetHop').onclick = async e=>{
+  $('sheetHop').onclick = e=>{
     const nutTT = e.target.closest('[data-chon-tt]');
-    if(nutTT){ dongSheet(); await doiTT(v, +nutTT.dataset.chonTt); return; }
+    if(nutTT){ const bMoi=+nutTT.dataset.chonTt; dongSheet();
+      if(bMoi===b) return;   /* không đổi gì */
+      setTimeout(()=>sheetGhiTienDo(v, bMoi),250); return; }
     if(e.target.closest('[data-hd]')){ dongSheet(); setTimeout(()=>sheetHanhDong(v),250); }
   };
 }
@@ -974,13 +1076,12 @@ async function suaTruong(v, thay, nhanOk){
 }
 
 /* ---- Sheet: chi tiết + sửa việc ---- */
-function sheetChiTiet(v, focusChat){
+function sheetChiTiet(v){
   const d = timDA(v.mada);
   const qly = laLeaderDA(v.mada);
   const khoaHan = !qly;
   const chinhCu = v.nguoi.split(',').map(s=>s.trim())[0]||'';
   const nguoiOpts = TEN_NHAN_SU.map(n=>'<option'+(chinhCu===n?' selected':'')+'>'+esc(n)+'</option>').join('');
-  const lsRaw = String(v.lichsukcs||'').split('|').map(x=>x.trim()).filter(Boolean);
   moSheet(
     '<div class="sh-title">📝 Chi tiết công việc</div>'
     +'<div class="sh-phu mono">'+esc(v.mada)+(d?' · '+esc(d.ten):'')+(v.capnhat?'<br>🕓 Cập nhật cuối: '+esc(v.capnhat):'')+'</div>'
@@ -992,31 +1093,13 @@ function sheetChiTiet(v, focusChat){
     +'<div class="o-ngay"><input class="sh-o" id="ctHan" value="'+esc(v.han==='-'?'':v.han)+'" placeholder="Chạm để chọn ngày" '+(khoaHan?'disabled':'')+' autocomplete="off"><span class="ic-lich">📅</span></div>'
     +'<label class="sh-nhan">Người hỗ trợ (chạm để chọn nhiều)</label><div id="ctHo">'+chipNhanSu('ctHo', v.nguoi.split(',').map(s=>s.trim()).slice(1).join(','), chinhCu)+'</div>'
     +'<label class="sh-nhan">Ghi chú</label><input class="sh-o" id="ctGhi" value="'+esc(v.ghichu)+'" autocomplete="off">'
-    +'<label class="sh-nhan">💬 Trao đổi / lịch sử</label>'
-    +'<div class="ls-khung" id="ctLS">'+(lsRaw.length?lsRaw.map(x=>{
-        const m=x.match(/^\[(.+?)\]:\s*(.*)$/s);
-        return '<div class="ls-muc"><div class="ls-dau">'+esc(m?m[1]:'')+'</div><div class="ls-noi">'+esc(m?m[2]:x)+'</div></div>';
-      }).join(''):'<div class="ls-trong">Chưa có trao đổi nào</div>')+'</div>'
-    +(!laKhach()?'<div class="ls-gui"><input class="sh-o" id="ctLSMoi" placeholder="Viết trao đổi / ghi chú tiến độ..." autocomplete="off"><button id="ctLSGui">Gửi</button></div>':'')
+    +'<button class="sh-nutphu" id="ctLichSu" style="margin-top:12px">🕓 Lịch sử & trao đổi'+(soLichSu(v)?' ('+soLichSu(v)+')':'')+'</button>'
     +(!laKhach()?'<button class="sh-nutchinh" id="ctLuu">💾 Lưu thay đổi</button>':'')
     +(qly?'<button class="sh-nutdo" id="ctXoa">🗑 Xóa công việc này</button>':'')
   );
   $('sheetHop').onclick = e=>{ const ms=e.target.closest('[data-ms]'); if(ms) ms.classList.toggle('chon'); };
   if(!khoaHan) ganLich($('ctHan'));
-  const lsEl=$('ctLS'); lsEl.scrollTop=lsEl.scrollHeight;
-  if(focusChat && $('ctLSMoi')) setTimeout(()=>{ $('ctLSMoi').focus(); $('ctLSMoi').scrollIntoView({block:'center'}); },350);
-  const gui=$('ctLSGui');
-  if(gui) gui.addEventListener('click', async ()=>{
-    const t=$('ctLSMoi').value.trim(); if(!t) return;
-    const entry='['+nhanTG()+' - '+USER.ten+']: '+t;
-    const cu=v.lichsukcs||'';
-    v.lichsukcs = cu?(cu+' | '+entry):entry;
-    $('ctLSMoi').value='';
-    lsEl.innerHTML += '<div class="ls-muc"><div class="ls-dau">'+esc(nhanTG()+' - '+USER.ten)+'</div><div class="ls-noi">'+esc(t)+'</div></div>';
-    lsEl.scrollTop=lsEl.scrollHeight;
-    try{ const kq=await goiAS('themlichsu',{magoc:v.mada,nvgoc:v.nhiemvu,nguoigoc:v.nguoi,phancapgoc:v.phancap||'',mada:v.mada,entry}); if(kq.lichsu) v.lichsukcs=kq.lichsu; toast('✓ Đã gửi','ok'); }
-    catch(e){ v.lichsukcs=cu; toast('✖ Chưa gửi được: '+e.message,'loi'); }
-  });
+  $('ctLichSu').onclick=()=>{ dongSheet(); setTimeout(()=>sheetLichSu(v),250); };
   const luu=$('ctLuu');
   if(luu) luu.addEventListener('click', async ()=>{
     const chinh=$('ctNguoi').value.trim();
