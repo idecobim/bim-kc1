@@ -96,6 +96,7 @@ header{display:flex;align-items:center;gap:10px;padding:14px 2px 10px;position:s
   .cot2>.khoi{break-inside:avoid}
   .da-luoi{grid-template-columns:repeat(auto-fill,minmax(360px,1fr))}
 }
+@media(min-width:1400px){ .cot2{column-count:3} }
 a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--cam);outline-offset:2px}
 
 /* ============ THẺ / DANH SÁCH ============ */
@@ -255,10 +256,9 @@ textarea.sh-o{resize:vertical;min-height:64px}
 .viec.co-tn{opacity:.62}
 .viec{align-items:flex-start}
 .v-han,.chip-tt,.v-more{margin-top:1px}
-/* Ghi chú tiến độ mới nhất hiện trực tiếp trên dòng việc */
-.v-note{display:block;font-size:11.5px;color:var(--muc);margin-top:3px;line-height:1.35;padding:4px 8px;background:var(--nen);border-radius:7px;border:1px solid var(--vien)}
+/* Ghi chú tiến độ mới nhất — mảnh, không khung, giảm chiều cao dòng */
+.v-note{display:block;font-size:11px;color:var(--mo);margin-top:1px;line-height:1.4}
 .v-note .d{color:var(--xanh);font-weight:700} .v-note .n{color:var(--vang);font-weight:700}
-.v-note b{white-space:normal}
 .v-note-row{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* ============ LỌC DỰ ÁN (Hôm nay) ============ */
@@ -575,12 +575,14 @@ function dongViec(v, hienDA){
     + (v.vuongmac?'<span class="co co-vm" title="Vướng mắc">⚠</span>':'')
     + (ngung(v)?'<span class="co co-tn" title="Tạm ngưng">⏸</span>':'');
   const b = bacTT(v.trangthai);
+  /* Dòng gọn: mặc định KHÔNG hiện dự án / phân cấp / người (lọc theo dự án
+     hoặc mở chi tiết khi cần). hienDA=true chỉ ở view chéo (Tìm, việc người khác). */
   const hoTro = v.nguoi.split(',').map(s=>s.trim()).filter(Boolean).slice(1);
-  const nguoiTxt = hienDA ? '' : (v.nguoi.split(',')[0].trim() ? tenNgan(v.nguoi.split(',')[0].trim())+(hoTro.length?' +'+hoTro.length:'') : '⚠ chưa giao');
-  const phu = [hienDA?v.mada:'', duongCap(v), nguoiTxt].filter(Boolean).join(' · ');
+  const nguoiTxt = v.nguoi.split(',')[0].trim() ? tenNgan(v.nguoi.split(',')[0].trim())+(hoTro.length?' +'+hoTro.length:'') : '⚠ chưa giao';
+  const phu = hienDA ? [v.mada, nguoiTxt].filter(Boolean).join(' · ') : '';
   const gc = ghiChuMoiNhat(v);
   const note = (gc && (gc.da||gc.no)) ? '<span class="v-note">'
-      + (gc.da?'<span class="v-note-row"><span class="d">✅ Đã:</span> '+esc(gc.da)+'</span>':'')
+      + (gc.da?'<span class="v-note-row"><span class="d">✔ Đã:</span> '+esc(gc.da)+'</span>':'')
       + (gc.no?'<span class="v-note-row"><span class="n">⏳ Nợ:</span> '+esc(gc.no)+'</span>':'')
       + '</span>' : '';
   return '<div class="viec'+(v.vuongmac?' co-vm':'')+(ngung(v)?' co-tn':'')+'" data-uid="'+v.uid+'">'
@@ -712,7 +714,6 @@ function veHomNay(){
   const vm = chuaXong.filter(v=>v.vuongmac);
   const conlai = chuaXong.filter(v=>!tre.includes(v)&&!tuan.includes(v));
   const xong = cua.filter(v=>bacTT(v.trangthai)===3);
-  const ngungDs = cua.filter(v=>ngung(v)&&bacTT(v.trangthai)!==3);
   const gio = new Date().getHours();
   const chao = gio<11?'Chào buổi sáng':gio<14?'Chào buổi trưa':gio<18?'Chào buổi chiều':'Chào buổi tối';
   let tom = 'Mọi việc trong tầm kiểm soát. Tuyệt vời! ✨';
@@ -735,12 +736,10 @@ function veHomNay(){
     +'</div>'
     + locDA
     +'<div class="cot2">'
-    + khoiViec('🔴 Trễ hạn','d-do',sxHan(tre),true,true)
-    + khoiViec('⚠️ Vướng mắc','d-vang',vm.filter(v=>!tre.includes(v)),true,true)
-    + khoiViec('🟠 Tuần này','d-vang',sxHan(tuan),true,true)
-    + khoiViec('🔵 Sắp tới / chưa hẹn','d-mo',sxHan(conlai),true,!nhieu && conlai.length<=8)
-    + khoiViec('⏸ Tạm ngưng','d-mo',ngungDs,true,false)
-    + khoiViec('✅ Đã hoàn thành','d-xanh',xong,true,false)
+    + khoiViec('🔴 Trễ hạn','d-do',sxHan(tre),false,true)
+    + khoiViec('⚠️ Vướng mắc','d-vang',vm.filter(v=>!tre.includes(v)),false,true)
+    + khoiViec('🟠 Tuần này','d-vang',sxHan(tuan),false,true)
+    + khoiViec('🔵 Sắp tới / chưa hẹn','d-mo',sxHan(conlai),false,!nhieu && conlai.length<=8)
     +'</div>'
     + veManHomNay(cua, LOC_DA_HN)
     + (cua.length? '' : (laQuanLy()?'':'<div class="khoi"><div class="trong"><span class="to">🎉</span>'+(LOC_DA_HN?'Không có việc nào trong dự án này.':'Bạn chưa được giao việc nào.'+(DUAN.filter(d=>xemDuocDA(d.ma)).length?'<br>Bấm nút ＋ để tự tạo việc cho mình.':'<br>Hãy sang tab <b>Dự án</b> để bắt đầu.'))+'</div></div>'));
@@ -991,23 +990,30 @@ function veKQ(){
     +(!da.length&&!vs.length?'<div class="khoi"><div class="trong"><span class="to">🤷</span>Không tìm thấy gì khớp "'+esc(tuKhoa)+'"</div></div>':'');
 }
 
-/* ================= SHEET (bảng trượt) ================= */
-let sheetDangMo=false;
+/* ================= SHEET (bảng trượt) =================
+   Lịch sử trình duyệt: 1 sheet = 1 entry duy nhất. Đóng bằng nút → back có cờ
+   để popstate không đóng oan sheet kế tiếp (hết "cửa sổ ảo"). */
+let sheetDangMo=false, _nuotPop=false;
 function moSheet(html, drawer){
   $('sheetHop').onclick = null;   /* xóa handler của sheet trước, tránh dính chéo */
   $('sheetHop').classList.toggle('drawer', !!drawer);
   $('sheetHop').innerHTML = '<div class="keo"></div><button class="sh-dong" onclick="dongSheet()">✕</button>'+html;
   $('sheetNen').classList.add('mo'); $('sheetHop').classList.add('mo');
   document.body.classList.add('khoa');
-  if(!sheetDangMo){ history.pushState({sheet:1},''); sheetDangMo=true; }
+  if(!sheetDangMo) history.pushState({sheet:1},'');
+  sheetDangMo=true;
 }
-function dongSheet(luiLich){
+function dongSheet(tuBack){
+  if($('lichPop').classList.contains('mo')) dongLich();
   $('sheetNen').classList.remove('mo'); $('sheetHop').classList.remove('mo');
   document.body.classList.remove('khoa');
-  if(sheetDangMo && !luiLich) history.back();
+  if(sheetDangMo && !tuBack){ _nuotPop=true; history.back(); }
   sheetDangMo=false;
 }
-window.addEventListener('popstate', ()=>{ if(sheetDangMo) dongSheet(true); });
+window.addEventListener('popstate', ()=>{
+  if(_nuotPop){ _nuotPop=false; return; }   /* back do chính app gọi — bỏ qua */
+  if(sheetDangMo) dongSheet(true);          /* nút Back thật của người dùng */
+});
 $('sheetNen').addEventListener('click', ()=>dongSheet());
 $('sheetHop').addEventListener('scroll', ()=>{ if($('lichPop').classList.contains('mo')) dongLich(); });
 
@@ -1021,30 +1027,13 @@ function sheetTrangThai(v){
       +'<span class="cham" style="background:'+TT_MAU[i]+'"></span>'+TT_NHAN[i]
       +'<span style="font-weight:400;color:var(--mo);font-size:12px;margin-left:4px">'+esc(t)+'</span>'
       +(i===b?'<span class="tick">✓</span>':'')+'</button>').join('')
-    +'<button class="sh-nutphu" data-hd="hd" style="margin-top:6px">⋯ Trao đổi · Vướng mắc · Tạm ngưng · Chi tiết</button>'
   );
   $('sheetHop').onclick = e=>{
     const nutTT = e.target.closest('[data-chon-tt]');
     if(nutTT){ const bMoi=+nutTT.dataset.chonTt; dongSheet();
       if(bMoi===b) return;   /* không đổi gì */
-      setTimeout(()=>sheetGhiTienDo(v, bMoi),250); return; }
-    if(e.target.closest('[data-hd]')){ dongSheet(); setTimeout(()=>sheetHanhDong(v),250); }
+      setTimeout(()=>sheetGhiTienDo(v, bMoi),250); }
   };
-}
-async function doiTT(v, bMoi){
-  if(laKhach()) return toast('Tài khoản khách chỉ xem','loi');
-  const bCu = bacTT(v.trangthai);
-  if(bMoi===bCu) return;
-  const ttCu = v.trangthai;
-  v.trangthai = TT[bMoi]; veTab(); rung(12);
-  toastUndo('→ '+TT_NHAN[bMoi]+' · '+esc(tenViec(v).slice(0,32)), async ()=>{
-    v.trangthai = ttCu; veTab();
-    try{ await goiAS('sua_trangthai_nhiemvu',{mada:v.mada,trangthai:ttCu,items:[{nhiemvu:v.nhiemvu,nguoi:v.nguoi,phancap:v.phancap}]}); }
-    catch(e){ toast('✖ Hoàn tác chưa lưu được: '+e.message,'loi'); }
-  });
-  try{
-    await goiAS('sua_trangthai_nhiemvu',{mada:v.mada,trangthai:TT[bMoi],items:[{nhiemvu:v.nhiemvu,nguoi:v.nguoi,phancap:v.phancap}]});
-  }catch(e){ v.trangthai=ttCu; veTab(); toast('✖ Chưa lưu được: '+e.message,'loi'); }
 }
 
 /* ---- Sheet: vướng mắc / tạm ngưng ---- */
@@ -1313,21 +1302,12 @@ $('nutAvatar').addEventListener('click', ()=>{
 });
 
 /* ---------- Toast ---------- */
-let toastTimer=null, toastUndoCb=null;
+let toastTimer=null;
 function toast(msg, kieu, giu){
   const t=$('toast');
   t.innerHTML = msg; t.className = (kieu||'')+' mo';
   clearTimeout(toastTimer);
   if(!giu) toastTimer=setTimeout(()=>t.classList.remove('mo'), 2800);
-}
-function toastUndo(msg, cb){
-  const t=$('toast');
-  t.innerHTML = msg+'<button class="hoantac" id="nutHoanTac">HOÀN TÁC</button>';
-  t.className='mo';
-  toastUndoCb=cb;
-  $('nutHoanTac').addEventListener('click',()=>{ t.classList.remove('mo'); const f=toastUndoCb; toastUndoCb=null; if(f) f(); });
-  clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>{ t.classList.remove('mo'); toastUndoCb=null; }, 6000);
 }
 
 /* ---------- Ủy quyền click danh sách ---------- */
